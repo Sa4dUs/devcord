@@ -1,0 +1,15 @@
+<div *ngIf="isLoading()">Unblocking Username...</div>
+<div *ngIf="getError()" class="error">{{ getError() }}</div>
+
+<form (ngSubmit)="unblockUser(); $event.preventDefault()">
+  <label for="username">Username to unblock:</label>
+  <input
+    id="username"
+    [(ngModel)]="toUserUsername"
+    name="username"
+    required
+  />
+  <button type="submit">Unblock</button>
+</form>
+
+<p *ngIf="getSuccess()" class="success">{{ getSuccess() }}</p>
