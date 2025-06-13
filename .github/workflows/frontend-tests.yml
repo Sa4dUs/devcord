@@ -1,0 +1,52 @@
+name: Frontend Tests
+
+on:
+    push:
+        branches:
+            - main
+            - "front/*"
+            - "all/*"
+    pull_request:
+        branches:
+            - main
+            - "front/*"
+            - "all/*"
+
+jobs:
+    front-test:
+        runs-on: ubuntu-latest
+        env:
+            CHROME_BIN: /usr/bin/google-chrome
+
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20
+
+            - name: Install dependencies for Google Chrome
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y \
+                    fonts-liberation libasound2t64 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 \
+                    libgbm1 libgtk-3-0 libnspr4 libnss3 libvulkan1 libxcomposite1 libxdamage1 libxfixes3 \
+                    libxkbcommon0 libxrandr2 xdg-utils
+
+            - name: Install Google Chrome
+              run: |
+                  wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+                  sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+
+            - run: npm ci
+              working-directory: ./frontend
+
+            - run: npx playwright install --with-deps
+              working-directory: ./frontend
+
+            - run: npm run test -- --watch=false --browsers=ChromeHeadlessNoSandbox
+              working-directory: ./frontend
+
+            - run: npm run test:e2e
+              working-directory: ./frontend

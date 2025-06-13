@@ -1,0 +1,58 @@
+name: Backend Tests
+
+on:
+    push:
+        branches:
+            - main
+            - "back/*"
+            - "all/*"
+    pull_request:
+        branches:
+            - main
+            - "back/*"
+            - "all/*"
+
+jobs:
+    back-test:
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                service: [api-gateway]
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v3
+
+            - name: Check if service exists
+              id: check_dir
+              run: |
+                  if [ ! -d "backend/${{ matrix.service }}" ]; then
+                    echo "Directory backend/${{ matrix.service }} does not exist. Skipping."
+                    echo "skip=true" >> $GITHUB_OUTPUT
+                  else
+                    echo "skip=false" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: Install Rust toolchain
+              if: steps.check_dir.outputs.skip == 'false'
+              run: |
+                  curl https://sh.rustup.rs -sSf | sh -s -- -y
+                  source $HOME/.cargo/env
+                  rustup default stable
+              working-directory: backend/${{ matrix.service }}
+
+            - name: Build Debug
+              if: steps.check_dir.outputs.skip == 'false'
+              run: cargo build
+              working-directory: backend/${{ matrix.service }}
+
+            - name: Build Release
+              if: steps.check_dir.outputs.skip == 'false'
+              run: cargo build --release
+              working-directory: backend/${{ matrix.service }}
+
+            - name: Run tests
+              if: steps.check_dir.outputs.skip == 'false'
+              run: cargo test -- --nocapture
+              working-directory: backend/${{ matrix.service }}
