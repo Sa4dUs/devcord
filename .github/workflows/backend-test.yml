@@ -18,7 +18,7 @@ jobs:
 
         strategy:
             matrix:
-                service: [api-gateway]
+                service: [api-gateway, auth-service, call-service, group-service, message-service, notification-service, presence-service, user-service]
 
         steps:
             - name: Checkout repository
