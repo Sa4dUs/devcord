@@ -25,6 +25,83 @@ services:
     networks:
       - backend
 
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+  
+  call-service:
+    build:
+      context: ./backend/call-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+  
+  group-service:
+    build:
+      context: ./backend/group-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  message-service:
+    build:
+      context: ./backend/message-service
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  notification-service:
+    build:
+      context: ./backend/notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  presence-service:
+    build:
+      context: ./backend/presence-service
+      dockerfile: Dockerfile
+    ports:
+      - "3006:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  user-service:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    ports:
+      - "3007:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
 networks:
   backend:
     driver: bridge
