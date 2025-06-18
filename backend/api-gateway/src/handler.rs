@@ -20,6 +20,7 @@ pub(crate) async fn handler(
     Extension(ParsedURI { prefix, subpath }): Extension<ParsedURI>,
     mut req: Request,
 ) -> Result<Response<Body>, StatusCode> {
+    // MIDDLEWARE1: Request Forwarding
     let service = config.services.get(&prefix).ok_or(StatusCode::NOT_FOUND)?;
 
     let route = service
@@ -34,8 +35,10 @@ pub(crate) async fn handler(
         .find(|m| m.eq_ignore_ascii_case(method.as_str()))
         .ok_or(StatusCode::METHOD_NOT_ALLOWED)?;
 
+    // MIDDLEWARE2: Check Auth
     // TODO(Sa4dUs): Check JWT if `route.protected`
 
+    // MIDDLEWARE3: Load balancer
     // TODO(Sa4dUs): Move load balancer logic away from here
 
     let Instance(uri) = service
@@ -43,6 +46,9 @@ pub(crate) async fn handler(
         .choose(&mut rand::rng())
         .ok_or(StatusCode::BAD_GATEWAY)?;
 
+    // MAIN
+
+    // MIDDLEWARE Body to bytes?
     let uri_str = format!("http://{uri}{subpath}");
     let uri: Uri = uri_str.parse().map_err(|_| StatusCode::BAD_GATEWAY)?;
     *req.uri_mut() = uri;
@@ -59,6 +65,7 @@ pub(crate) async fn handler(
         .await
         .map_err(|_| StatusCode::BAD_GATEWAY)?;
 
+    // Send the request and receive the response
     let client = Client::new();
     let mut forward_req = client.request(parts.method.clone(), uri_str);
 
