@@ -3,7 +3,7 @@ use std::{fs, sync::Arc};
 use anyhow::Error;
 use serde::Deserialize;
 
-type SharedConfig = Arc<Config>;
+pub(crate) type SharedConfig = Arc<Config>;
 
 const CONFIG_FILE: &str = "config/config.toml";
 
@@ -14,7 +14,6 @@ pub(crate) struct Config {
 
 #[derive(Debug, Deserialize)]
 struct Service {
-    prefix: String,
     routes: Vec<Route>,
 }
 

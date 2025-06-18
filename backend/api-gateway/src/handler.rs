@@ -1,14 +1,19 @@
 use axum::{
+    Extension,
     extract::{Path, Request},
     http::Method,
 };
-use tracing::info;
 
-use crate::types::{AppError, AppJson};
+use crate::{
+    config::SharedConfig,
+    middleware::parser::ParsedURI,
+    types::{AppError, AppJson},
+};
 
 pub(crate) async fn handler(
     method: Method,
-    Path(path): Path<String>,
+    Extension(config): Extension<SharedConfig>,
+    Extension(ParsedURI { prefix, subpath }): Extension<ParsedURI>,
     req: Request,
 ) -> Result<AppJson<&'static str>, AppError> {
     Ok(AppJson("OK"))

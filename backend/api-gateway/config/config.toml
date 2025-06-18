@@ -1,5 +1,4 @@
 [services.example]
-prefix = "example"
 instances = ["localhost:3001", "localhost:3002"]
 
 [[services.example.routes]]
