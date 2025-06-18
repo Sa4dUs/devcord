@@ -8,5 +8,5 @@ protected = false
 
 [[services.example.routes]]
 path = "/protected"
-allow_methods = ["POST"]
+allow_methods = ["GET", "POST"]
 protected = true

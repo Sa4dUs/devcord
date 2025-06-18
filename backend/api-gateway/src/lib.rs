@@ -9,7 +9,6 @@ use crate::middleware::parser::ParserLayer;
 pub(crate) mod config;
 pub(crate) mod handler;
 pub(crate) mod middleware;
-pub(crate) mod types;
 
 pub async fn run() -> anyhow::Result<()> {
     tracing_subscriber::registry()

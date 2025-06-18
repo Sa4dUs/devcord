@@ -9,19 +9,23 @@ const CONFIG_FILE: &str = "config/config.toml";
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Config {
-    services: std::collections::HashMap<String, Service>,
+    pub(crate) services: std::collections::HashMap<String, Service>,
 }
 
 #[derive(Debug, Deserialize)]
-struct Service {
-    routes: Vec<Route>,
+pub(crate) struct Service {
+    pub(crate) instances: Vec<Instance>,
+    pub(crate) routes: Vec<Route>,
 }
 
 #[derive(Debug, Deserialize)]
-struct Route {
-    path: String,
-    allow_methods: Vec<String>,
-    protected: bool,
+pub(crate) struct Instance(pub(crate) String);
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct Route {
+    pub(crate) path: String,
+    pub(crate) allow_methods: Vec<String>,
+    pub(crate) protected: bool,
 }
 
 pub(crate) fn load() -> Result<Config, Error> {
