@@ -2,12 +2,14 @@ use std::{net::SocketAddr, sync::Arc};
 
 use axum::{http::{header, HeaderValue, Method}, routing::post, serve, Router};
 use dotenvy::dotenv;
-use sqlx::postgres::PgPoolOptions;
+use sqlx::{migrate::Migrator, postgres::PgPoolOptions};
 use tokio::net::TcpListener;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{accept::accept, request::request, update::update};
+
+static MIGRATOR: Migrator = sqlx::migrate!();
 
 #[derive(Debug, Clone)]
 pub struct AppState {
@@ -38,6 +40,8 @@ pub async fn run() -> anyhow::Result<()> {
     let db = PgPoolOptions::new()
         .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL env not set"))
         .await?;
+
+    MIGRATOR.run(&db).await?;
 
     let state = Arc::new(AppState{db});
 
