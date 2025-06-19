@@ -1,6 +1,11 @@
 use std::{net::SocketAddr, sync::Arc};
 
-use axum::{http::{header, HeaderValue, Method}, routing::post, serve, Router};
+use axum::{
+    Router,
+    http::{HeaderValue, Method, header},
+    routing::post,
+    serve,
+};
 use dotenvy::dotenv;
 use sqlx::{migrate::Migrator, postgres::PgPoolOptions};
 use tokio::net::TcpListener;
@@ -43,7 +48,7 @@ pub async fn run() -> anyhow::Result<()> {
 
     MIGRATOR.run(&db).await?;
 
-    let state = Arc::new(AppState{db});
+    let state = Arc::new(AppState { db });
 
     let app = Router::new()
         .route("/update", post(update))

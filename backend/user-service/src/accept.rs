@@ -1,3 +1,1 @@
-pub async fn accept() {
-    
-}
+pub async fn accept() {}
