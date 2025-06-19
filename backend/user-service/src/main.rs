@@ -1,7 +1,6 @@
-use axum::{Router, routing::get};
-use crate::app;
+use user_service::app;
 
 #[tokio::main]
 async fn main() {
-    app::run();
+    app::run().await.unwrap();
 }
