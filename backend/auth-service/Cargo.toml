@@ -4,5 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+hyper = { version = "0.14", features = ["server"] }
 axum = "0.8.4"
 tokio = {version = "1.45.1", features=["full"]}
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-native-tls"] }
+dotenvy = "0.15"
+uuid = { version = "1", features = ["v4"] }
+anyhow = "1.0"
