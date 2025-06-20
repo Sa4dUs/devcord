@@ -1,11 +1,22 @@
-use axum::{Router, routing::get};
+use dotenvy::dotenv;
+use sqlx::postgres::PgPoolOptions;
+use std::env;
 
 #[tokio::main]
-async fn main() {
-    // build our application with a single route
-    let app = Router::new().route("/", get(|| async { "Hello, World!" }));
+async fn main() -> Result<(), sqlx::Error> {
+    dotenv().ok(); // I think this might not be necessary if we are using compose
 
-    // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let database_url =
+        env::var("AUTH_DATABASE_URL").expect("AUTH_DATABASE_URL debe estar definido en .env");
+
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await?;
+
+    sqlx::migrate!().run(&pool).await?;
+
+    println!("Database connected");
+
+    Ok(())
 }
