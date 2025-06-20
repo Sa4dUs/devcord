@@ -7,9 +7,11 @@ use axum::{
     serve,
 };
 use dotenvy::dotenv;
+use fluvio::{Fluvio, consumer::ConsumerConfigBuilder};
 use sqlx::{migrate::Migrator, postgres::PgPoolOptions};
 use tokio::net::TcpListener;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use tracing::instrument::WithSubscriber;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{accept::accept, request::request, update::update};
