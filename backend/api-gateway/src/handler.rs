@@ -3,7 +3,7 @@ use axum::{
     Extension,
     body::Body,
     extract::Request,
-    http::{Method, StatusCode, Uri},
+    http::{StatusCode, Uri},
     response::Response,
 };
 use hyper::header::CONTENT_LENGTH;
@@ -11,43 +11,25 @@ use rand::seq::IndexedRandom;
 
 use reqwest::Client;
 
-use crate::config::Instance;
-use crate::{config::SharedConfig, middleware::parser::ParsedURI};
+use crate::config::{Instance, Service};
+use crate::middleware::parser::ParsedURI;
 
 pub(crate) async fn handler(
-    method: Method,
-    Extension(config): Extension<SharedConfig>,
-    Extension(ParsedURI { prefix, subpath }): Extension<ParsedURI>,
+    Extension(ParsedURI { prefix: _, subpath }): Extension<ParsedURI>,
+    Extension(service): Extension<Service>,
     mut req: Request,
 ) -> Result<Response<Body>, StatusCode> {
-    // MIDDLEWARE1: Request Forwarding
-    let service = config.services.get(&prefix).ok_or(StatusCode::NOT_FOUND)?;
-
-    let route = service
-        .routes
-        .iter()
-        .find(|r| r.path == subpath)
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    route
-        .allow_methods
-        .iter()
-        .find(|m| m.eq_ignore_ascii_case(method.as_str()))
-        .ok_or(StatusCode::METHOD_NOT_ALLOWED)?;
-
     // MIDDLEWARE2: Check Auth
     // TODO(Sa4dUs): Check JWT if `route.protected`
 
     // MIDDLEWARE3: Load balancer
     // TODO(Sa4dUs): Move load balancer logic away from here
-
     let Instance(uri) = service
         .instances
         .choose(&mut rand::rng())
         .ok_or(StatusCode::BAD_GATEWAY)?;
 
     // MAIN
-
     // MIDDLEWARE Body to bytes?
     let uri_str = format!("http://{uri}{subpath}");
     let uri: Uri = uri_str.parse().map_err(|_| StatusCode::BAD_GATEWAY)?;

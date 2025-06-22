@@ -3,29 +3,35 @@ use std::{
     task::{Context, Poll},
 };
 
-use axum::{extract::Request, response::Response};
+use axum::{
+    extract::Request,
+    response::{IntoResponse, Response},
+};
+use hyper::StatusCode;
 use tower::{Layer, Service};
 
+use crate::{middleware::parser::ParsedURI, state::AppState};
+
 #[derive(Clone)]
-pub struct RouterLayer;
+pub(crate) struct RouterLayer {
+    pub(crate) state: AppState,
+}
 
 impl<S> Layer<S> for RouterLayer {
     type Service = RouterMiddleware<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        RouterMiddleware::new(inner)
+        RouterMiddleware {
+            inner,
+            state: self.state.clone(),
+        }
     }
 }
 
 #[derive(Clone)]
 pub struct RouterMiddleware<S> {
     inner: S,
-}
-
-impl<S> RouterMiddleware<S> {
-    pub fn new(inner: S) -> Self {
-        Self { inner }
-    }
+    state: AppState,
 }
 
 impl<S> Service<Request> for RouterMiddleware<S>
@@ -41,11 +47,37 @@ where
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, req: Request) -> Self::Future {
-        // TODO(Sa4dUs): Add RouterMiddleware logic
+    fn call(&mut self, mut req: Request) -> Self::Future {
         let mut inner = self.inner.clone();
+        let AppState { config } = self.state.clone();
 
         Box::pin(async move {
+            let ParsedURI { prefix, subpath } = match req.extensions().get::<ParsedURI>() {
+                Some(uri) => uri,
+                None => return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+            };
+
+            let service = match config.services.get(prefix) {
+                Some(svc) => svc,
+                None => return Ok(StatusCode::NOT_FOUND.into_response()),
+            };
+
+            let route = match service.routes.iter().find(|r| r.path == *subpath) {
+                Some(r) => r,
+                None => return Ok(StatusCode::NOT_FOUND.into_response()),
+            };
+
+            match route
+                .allow_methods
+                .iter()
+                .find(|m| m.eq_ignore_ascii_case(req.method().as_str()))
+            {
+                Some(_) => {}
+                None => return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response()),
+            };
+
+            req.extensions_mut().insert(service.clone());
+
             let response = inner.call(req).await?;
             Ok(response)
         })
