@@ -10,9 +10,11 @@ axum = { version = "0.8.4", features = ["macros"] }
 anyhow = "1.0.98"
 toml = "0.8.23"
 tracing = "0.1.41"
-tower-http = {version= "0.6.6", features = ["trace"]}
+tower-http = { version = "0.6.6", features = ["trace"] }
 tracing-subscriber = "0.3.19"
 tower = "0.5.2"
 rand = "0.9.1"
 reqwest = "0.12.20"
 hyper = "1.6.0"
+dotenv = "0.15.0"
+jsonwebtoken = "9.3.1"

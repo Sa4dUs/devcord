@@ -3,29 +3,37 @@ use std::{
     task::{Context, Poll},
 };
 
-use axum::{extract::Request, response::Response};
+use axum::{
+    extract::Request,
+    response::{IntoResponse, Response},
+};
+use hyper::{StatusCode, header::AUTHORIZATION};
+use jsonwebtoken::{DecodingKey, Validation, decode};
 use tower::{Layer, Service};
 
+use crate::{jwt::Claims, middleware::parser::ParsedURI, state::AppState};
+
+// TODO(Sa4dUs): Maybe this can be a tuple struct?
 #[derive(Clone)]
-pub struct AuthLayer;
+pub(crate) struct AuthLayer {
+    pub(crate) state: AppState,
+}
 
 impl<S> Layer<S> for AuthLayer {
     type Service = AuthMiddleware<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        AuthMiddleware::new(inner)
+        AuthMiddleware {
+            inner,
+            state: self.state.clone(),
+        }
     }
 }
 
 #[derive(Clone)]
 pub struct AuthMiddleware<S> {
     inner: S,
-}
-
-impl<S> AuthMiddleware<S> {
-    pub fn new(inner: S) -> Self {
-        Self { inner }
-    }
+    state: AppState,
 }
 
 impl<S> Service<Request> for AuthMiddleware<S>
@@ -42,10 +50,55 @@ where
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
-        // TODO(Sa4dUs): Add AuthMiddleware logic
         let mut inner = self.inner.clone();
+        let AppState { config } = self.state.clone();
 
         Box::pin(async move {
+            let ParsedURI { prefix, subpath } = match req.extensions().get::<ParsedURI>() {
+                Some(uri) => uri,
+                None => return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+            };
+
+            // TODO(Sa4dUs): Make this decent once `config.path` is a HashMap
+            // TODO(Sa4dUs): Replace `unwrap` calls with better error handling
+            // We can unwrap because the router middleware checks if it's a valid route
+            // but it would be better to return some type of `bug!()` like message
+            let route = config
+                .services
+                .get(prefix)
+                .unwrap()
+                .routes
+                .iter()
+                .find(|r| r.path == *subpath)
+                .unwrap();
+
+            if !route.protected {
+                // If route isn't protected, we don't require the client to send
+                // `Authorization: Bearer {TOKEN}` header, just continue
+                let response = inner.call(req).await?;
+                return Ok(response);
+            }
+
+            // Check `Authorization: Bearer {TOKEN}`
+            let token = match req.headers().get(&AUTHORIZATION) {
+                Some(val) => val.to_str().unwrap(), // TODO(Sa4dUs): Handle this error properly
+                None => return Ok(StatusCode::UNAUTHORIZED.into_response()),
+            };
+
+            tracing::debug!("{token:?}");
+            let secret = std::env::var("JWT_SECRET").expect("env variable JWT_SECRET is not set");
+
+            if decode::<Claims>(
+                token,
+                &DecodingKey::from_secret(secret.as_ref()),
+                &Validation::default(),
+            )
+            .is_err()
+            {
+                return Ok(StatusCode::UNAUTHORIZED.into_response());
+            };
+
+            // Valid JWT token, pass
             let response = inner.call(req).await?;
             Ok(response)
         })

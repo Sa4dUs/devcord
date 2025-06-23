@@ -11,6 +11,7 @@ use crate::{
 
 pub(crate) mod config;
 pub(crate) mod handler;
+pub(crate) mod jwt;
 pub(crate) mod middleware;
 pub(crate) mod state;
 
@@ -26,10 +27,12 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/{*path}", any(handler::handler))
         .layer(TraceLayer::new_for_http())
         .layer(RateLimitLayer)
+        .layer(AuthLayer {
+            state: state.clone(),
+        })
         .layer(RouterLayer {
             state: state.clone(),
         })
-        .layer(AuthLayer)
         .layer(ParserLayer)
         .with_state(state);
 
