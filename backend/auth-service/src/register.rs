@@ -7,6 +7,9 @@ struct RegisterData {
     telephone: Option<String>,
 }
 
-pub async func register_user(Json(entering_user) : Json<RegisterData>) -> impl IntoResponse{
-    
+pub async fn register_user(Json(entering_user): Json<RegisterData>) -> impl IntoResponse {
+    format!(
+        "Usuario recibido: {}, teléfono: {:?}",
+        entering_user.username, entering_user.telephone
+    )
 }
