@@ -1,4 +1,4 @@
-use crate::db::password_hasher::hash_password;
+use crate::db::password_hasher::{hash_password,verify_password};
 use crate::models::user_info::UserInfo;
 use sqlx::PgPool;
 
@@ -24,3 +24,65 @@ pub async fn insert_user(
 
     Ok(user)
 }
+
+pub async fn change_password(
+    pool: &PgPool,
+    username: &str,
+    hashed_password: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        UPDATE users
+        SET hashed_password = $1
+        WHERE username = $2
+        "#,
+    )
+    .bind(hashed_password)
+    .bind(username)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn delete_user(
+    pool: &PgPool,
+    username: &str,
+) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query(
+        r#"
+        DELETE FROM users
+        WHERE username = $1
+        "#,
+    )
+    .bind(username)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
+}
+
+pub async fn verify_user_credentials(
+    pool: &PgPool,
+    username: &str,
+    password: &str,
+) -> bool {
+    let result = sqlx::query!(
+        r#"
+        SELECT hashed_password
+        FROM users
+        WHERE username = $1
+        "#,
+        username
+    )
+    .fetch_one(pool)
+    .await;
+
+    match result {
+        Ok(record) => {
+            verify_password(password, &record.hashed_password)
+        },
+        Err(_) => false,
+    }
+}
+
