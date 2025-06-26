@@ -93,14 +93,89 @@ services:
 
   user-service:
     build:
-      context: ./backend/user-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: ./user-service/Dockerfile
     ports:
       - "3007:3000"
     environment:
+      - CORS_ORIGIN=http://localhost:3000
+      - DATABASE_URL=postgres://postgres:password@user-db:5432/psqldb
+      - SOCKET_ADDR=0.0.0.0:3000
+      - FLUVIO_ADDR=sc:9003
+      - PRODUCER_TOPIC=user
+      - CONSUMER_TOPIC=auth
       - CARGO_ENV
     networks:
       - backend
+    depends_on:
+      - sc
+      - spu
+  
+  user-db:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: psqldb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  sc:
+    image: infinyon/fluvio:stable
+    container_name: sc
+    hostname: sc
+    ports:
+      - "9103:9003"
+    environment:
+      - RUST_LOG=info
+    command: "./fluvio-run sc --local /fluvio/metadata"
+    volumes:
+      - ./backend/fluvio/fluvio-metadata:/fluvio/metadata
+    networks:
+      - backend
+
+  sc-setup:
+    build:
+      context: ./backend/fluvio
+      dockerfile: Dockerfile
+    container_name: sc-setup
+    environment:
+      - RUST_LOG=info
+    entrypoint: >
+      /bin/sh -c "
+      fluvio profile add docker sc:9003 docker;
+      fluvio cluster spu register --id 5001 -p spu:9010 --private-server spu:9011;
+      exit 0;
+      "
+    depends_on:
+      - sc
+    networks:
+      - backend
+
+  spu:
+    image: infinyon/fluvio:stable
+    container_name: spu
+    hostname: spu
+    volumes:
+      - ./backend/fluvio/fluvio-data:/fluvio/data
+    environment:
+      - RUST_LOG=info
+    ports:
+      - "9110:9010"
+      - "9111:9011"
+    command: "./fluvio-run spu -i 5001 -p spu:9010 -v spu:9011 --sc-addr sc:9004 --log-base-dir /fluvio/data"
+    depends_on:
+      - sc
+    networks:
+      - backend
+
+volumes:
+  pgdata:
 
 networks:
   backend:

@@ -2,8 +2,10 @@ FROM rust:1.87 AS builder
 
 WORKDIR /usr/src/app
 
-COPY Cargo.toml Cargo.lock ./
-COPY src ./src
+COPY ./user-service/Cargo.toml ./user-service/Cargo.lock ./
+COPY ./user-service/src ./src
+COPY ./user-service/migrations ./migrations
+COPY topic_structs ../topic_structs
 
 ARG BUILD_MODE=release
 
@@ -24,6 +26,7 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 RUN useradd -m appuser
 
 COPY --from=builder /usr/src/app/target/release/user-service /usr/local/bin/app
+COPY --from=builder /usr/src/app/migrations ./user-service/migrations
 
 USER appuser
 
