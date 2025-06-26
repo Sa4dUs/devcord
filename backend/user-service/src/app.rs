@@ -12,7 +12,11 @@ use tokio::net::TcpListener;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::{answer_request::answer, fluvio_consumer, request::request, update::update};
+use crate::{
+    fluvio_consumer,
+    friendships::{accept, deny, request},
+    update::update,
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -100,7 +104,8 @@ pub async fn run() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/update", post(update))
         .route("/request", post(request))
-        .route("/answer", post(answer))
+        .route("/accept", post(accept))
+        .route("/deny", post(deny))
         .layer(cors_layer)
         .layer(trace_layer)
         .with_state(state);

@@ -22,13 +22,14 @@ pub async fn run(fluvio: Fluvio, db: sqlx::PgPool) -> anyhow::Result<()> {
             borrow_decode_from_slice(record.value(), standard());
 
         if let Ok((user_created, _)) = &parse_result {
-            if let Ok(_) = sqlx::query(
+            if sqlx::query(
                 "
                 SELECT id FROM users WHERE id = $1",
             )
             .bind(&user_created.id)
             .fetch_one(&db)
             .await
+            .is_ok()
             {
                 continue;
             }

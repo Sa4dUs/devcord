@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS friendships (
     from_user_id TEXT NOT NULL,
     to_user_id TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT friendships_pkey PRIMARY KEY (from_user_id, to_user_id),
@@ -20,7 +19,7 @@ CREATE TABLE IF NOT EXISTS friend_requests (
     id SERIAL PRIMARY KEY,
     from_user_id TEXT NOT NULL,
     to_user_id TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending', -- pending | accepted | rejected
+    state TEXT NOT NULL DEFAULT 'PENDING', -- PENDING | ACCEPTED | DENIED
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     responded_at TIMESTAMP WITH TIME ZONE,
 

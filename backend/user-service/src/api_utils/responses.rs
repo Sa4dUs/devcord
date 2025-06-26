@@ -5,7 +5,7 @@ pub struct ApiResponseMessage {
     pub message: &'static str,
 }
 
-type ApiResponse = (StatusCode, Json<ApiResponseMessage>);
+pub type ApiResponse = (StatusCode, Json<ApiResponseMessage>);
 
 pub static USER_DOES_NOT_EXIST: ApiResponse = (
     StatusCode::BAD_REQUEST,
@@ -46,5 +46,33 @@ pub static REQUEST_CREATED: ApiResponse = (
     StatusCode::OK,
     Json(ApiResponseMessage {
         message: "Request created",
+    }),
+);
+
+pub static REQUEST_ACCEPTED: ApiResponse = (
+    StatusCode::OK,
+    Json(ApiResponseMessage {
+        message: "Request accepted",
+    }),
+);
+
+pub static REQUEST_DENIED: ApiResponse = (
+    StatusCode::OK,
+    Json(ApiResponseMessage {
+        message: "Request denied",
+    }),
+);
+
+pub static REQUEST_DOES_NOT_EXIST: ApiResponse = (
+    StatusCode::EXPECTATION_FAILED,
+    Json(ApiResponseMessage {
+        message: "Request does not exist",
+    }),
+);
+
+pub static REQUEST_NOT_PENDING: ApiResponse = (
+    StatusCode::BAD_REQUEST,
+    Json(ApiResponseMessage {
+        message: "Friend request already answered",
     }),
 );
