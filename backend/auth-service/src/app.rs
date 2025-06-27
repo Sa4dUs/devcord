@@ -1,5 +1,8 @@
 use crate::register::register_user;
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    routing::{get, post},
+};
 use dotenvy::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
@@ -7,7 +10,9 @@ use std::env;
 pub async fn run() -> Result<(), sqlx::Error> {
     dotenv().ok();
 
-    let app = axum::Router::new().route("/", axum::routing::get(|| async { "Hello, world!" }));
+    let app = axum::Router::new()
+        .route("/register", post(register_user))
+        .route("/", axum::routing::get(|| async { "Hello, world!" }));
 
     let database_url =
         env::var("AUTH_DATABASE_URL").expect("AUTH_DATABASE_URL should be defined in .env");

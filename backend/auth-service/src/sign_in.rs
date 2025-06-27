@@ -1,7 +1,8 @@
 use axum::{Json, response::IntoResponse};
 use serde::Deserialize;
 
-struct SignInData {
+#[derive(Deserialize)]
+pub struct SignInData {
     username: String,
     password: String,
 }
