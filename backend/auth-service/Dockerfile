@@ -4,6 +4,7 @@ WORKDIR /usr/src/app
 
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
+COPY migrations ./migrations
 
 ARG BUILD_MODE=release
 
@@ -24,6 +25,7 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 RUN useradd -m appuser
 
 COPY --from=builder /usr/src/app/target/release/auth-service /usr/local/bin/app
+COPY --from=builder /usr/src/app/migrations ./migrations
 
 USER appuser
 
