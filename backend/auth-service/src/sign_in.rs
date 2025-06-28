@@ -7,6 +7,6 @@ pub struct SignInData {
     password: String,
 }
 
-pub async func sign_in_user(Json(entering_user) : Json<RegisterData>) -> impl IntoResponse{
+pub async fn sign_in_user(Json(entering_user) : Json<RegisterData>) -> impl IntoResponse{
     
 }

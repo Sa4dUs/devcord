@@ -1,18 +1,15 @@
 use crate::register::register_user;
 use axum::{
-    Router,
+    Extension, Router,
     routing::{get, post},
 };
 use dotenvy::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
+use std::sync::Arc;
 
 pub async fn run() -> Result<(), sqlx::Error> {
     dotenv().ok();
-
-    let app = axum::Router::new()
-        .route("/register", post(register_user))
-        .route("/", axum::routing::get(|| async { "Hello, world!" }));
 
     let database_url =
         env::var("AUTH_DATABASE_URL").expect("AUTH_DATABASE_URL should be defined in .env");
@@ -24,7 +21,14 @@ pub async fn run() -> Result<(), sqlx::Error> {
 
     sqlx::migrate!().run(&pool).await?;
 
+    let shared_pool = Arc::new(pool);
+
     println!("Database connected");
+
+    let app = axum::Router::new()
+        .route("/register", post(register_user))
+        .route("/", axum::routing::get(|| async { "Hello, world!" }))
+        .layer(Extension(shared_pool.clone()));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 
