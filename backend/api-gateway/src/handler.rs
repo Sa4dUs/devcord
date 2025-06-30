@@ -19,9 +19,6 @@ pub(crate) async fn handler(
     Extension(service): Extension<Service>,
     mut req: Request,
 ) -> Result<Response<Body>, StatusCode> {
-    // MIDDLEWARE2: Check Auth
-    // TODO(Sa4dUs): Check JWT if `route.protected`
-
     // MIDDLEWARE3: Load balancer
     // TODO(Sa4dUs): Move load balancer logic away from here
     let Instance(uri) = service
