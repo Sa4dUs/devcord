@@ -3,10 +3,13 @@ use std::fs;
 use anyhow::Error;
 use serde::Deserialize;
 
+#[cfg(not(test))]
 const CONFIG_FILE: &str = "config/config.toml";
+#[cfg(test)]
+const CONFIG_FILE: &str = "config/config.example.toml";
 
 #[derive(Debug, Clone, Default, Deserialize)]
-pub(crate) struct Config {
+pub struct Config {
     pub(crate) services: std::collections::HashMap<String, Service>,
 }
 
@@ -27,11 +30,11 @@ pub(crate) struct Route {
     pub(crate) protected: bool,
 }
 
-pub(crate) fn load() -> Result<Config, Error> {
+pub fn load() -> Result<Config, Error> {
     load_from_path(CONFIG_FILE)
 }
 
-fn load_from_path(path: &str) -> Result<Config, Error> {
+pub fn load_from_path(path: &str) -> Result<Config, Error> {
     let content = fs::read_to_string(path)?;
     let config: Config = toml::from_str(&content)?;
     Ok(config)

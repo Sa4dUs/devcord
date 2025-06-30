@@ -9,7 +9,7 @@ use crate::{
     state::AppState,
 };
 
-pub(crate) mod config;
+pub mod config;
 pub(crate) mod handler;
 pub(crate) mod jwt;
 pub(crate) mod middleware;
