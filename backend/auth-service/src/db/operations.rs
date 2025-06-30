@@ -3,6 +3,8 @@ use crate::models::user_info::UserInfo;
 use sqlx::{Error as SqlxError, PgPool, Row};
 use thiserror::Error;
 
+const UNIQUE_VIOLATED: &str = "23505";
+
 #[derive(Debug, Error)]
 pub enum UserInsertError {
     #[error("The username is already taken")]
@@ -33,8 +35,7 @@ pub async fn insert_user(
         Ok(user) => Ok(user),
         Err(e) => {
             if let SqlxError::Database(db_err) = &e {
-                //23505 is the error code when the UNIQUE is violated
-                if db_err.code().as_deref() == Some("23505") {
+                if db_err.code().as_deref() == Some(UNIQUE_VIOLATED) {
                     return Err(UserInsertError::UsernameTaken);
                 }
             }
