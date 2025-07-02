@@ -78,10 +78,14 @@ pub async fn delete_user(pool: &PgPool, username: &str) -> Result<bool, sqlx::Er
     Ok(result.rows_affected() > 0)
 }
 
-pub async fn verify_user_credentials(pool: &PgPool, username: &str, password: &str) -> bool {
-    let result = sqlx::query(
+pub async fn verify_user_credentials(
+    pool: &PgPool,
+    username: &str,
+    password: &str,
+) -> Option<UserInfo> {
+    let result = sqlx::query_as::<_, UserInfo>(
         r#"
-        SELECT hashed_password
+        SELECT id, username, hashed_password, telephone
         FROM users
         WHERE username = $1
         "#,
@@ -91,10 +95,13 @@ pub async fn verify_user_credentials(pool: &PgPool, username: &str, password: &s
     .await;
 
     match result {
-        Ok(record) => {
-            let hashed: String = record.get("hashed_password");
-            verify_password(password, &hashed)
+        Ok(user) => {
+            if verify_password(password, &user.hashed_password) {
+                Some(user)
+            } else {
+                None
+            }
         }
-        Err(_) => false,
+        Err(_) => None,
     }
 }

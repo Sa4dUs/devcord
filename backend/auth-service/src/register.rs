@@ -1,5 +1,6 @@
 use crate::api_utils::responses::{INTERNAL_SERVER_ERROR, USERNAME_ALREADY_USED};
 use crate::db::operations::{UserInsertError, insert_user};
+use crate::db::password_hasher::hash_password;
 use crate::jwt::generate_jwt;
 use axum::{Extension, Json, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
@@ -26,10 +27,16 @@ pub async fn register_user(
     Extension(pool): Extension<Arc<PgPool>>,
     Json(entering_user): Json<RegisterData>,
 ) -> impl IntoResponse {
+    //This should be better traced
+    let hashed_password = match hash_password(&entering_user.password).await {
+        Ok(p) => p,
+        Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
+    };
+
     match insert_user(
         &pool,
         &entering_user.username,
-        &entering_user.password,
+        &hashed_password,
         entering_user.telephone.as_deref(),
     )
     .await

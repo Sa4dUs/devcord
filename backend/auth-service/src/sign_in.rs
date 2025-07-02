@@ -1,5 +1,18 @@
-use axum::{Json, response::IntoResponse};
-use serde::Deserialize;
+use axum::{Extension, Json, http::StatusCode, response::IntoResponse};
+use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
+use std::sync::Arc;
+
+use crate::api_utils::responses::INTERNAL_SERVER_ERROR;
+use crate::db::operations::verify_user_credentials;
+use crate::jwt::generate_jwt;
+
+#[derive(Serialize)]
+struct SignInResponse {
+    token: String,
+    user_id: i32,
+    username: String,
+}
 
 #[derive(Deserialize)]
 pub struct SignInData {
@@ -7,6 +20,25 @@ pub struct SignInData {
     password: String,
 }
 
-pub async fn sign_in_user(Json(entering_user) : Json<RegisterData>) -> impl IntoResponse{
-    
+pub async fn sign_in_user(
+    Extension(pool): Extension<Arc<PgPool>>,
+    Json(entering_user): Json<SignInData>,
+) -> impl IntoResponse {
+    if let Some(user_info) =
+        verify_user_credentials(&pool, &entering_user.username, &entering_user.password).await
+    {
+        match generate_jwt(user_info.id) {
+            Ok(token) => {
+                let response = SignInResponse {
+                    token,
+                    user_id: user_info.id,
+                    username: user_info.username,
+                };
+                Json(response).into_response()
+            }
+            Err(_) => INTERNAL_SERVER_ERROR.into_response(),
+        }
+    } else {
+        (StatusCode::UNAUTHORIZED, "Invalid credentials").into_response()
+    }
 }

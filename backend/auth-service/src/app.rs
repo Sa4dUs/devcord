@@ -1,4 +1,5 @@
 use crate::register::register_user;
+use crate::sign_in::sign_in_user;
 use axum::{
     Extension, Router,
     routing::{get, post},
@@ -27,6 +28,7 @@ pub async fn run() -> Result<(), sqlx::Error> {
 
     let app = axum::Router::new()
         .route("/register", post(register_user))
+        .route("/sign_in", post(sign_in_user))
         .route("/", axum::routing::get(|| async { "Hello, world!" }))
         .layer(Extension(shared_pool.clone()));
 
