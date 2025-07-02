@@ -36,6 +36,7 @@ services:
     environment:
       - CARGO_ENV
       - AUTH_DATABASE_URL=postgres://postgres:password@auth-db:5432/psqldb
+      - JWT_SECRET="justalongenoughkeyforhs256algorithm"
     networks:
       - backend
 
