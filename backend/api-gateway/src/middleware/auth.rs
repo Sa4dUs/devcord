@@ -13,7 +13,7 @@ use tower::{Layer, Service};
 
 use crate::{jwt::Claims, middleware::parser::ParsedURI, state::AppState};
 
-// TODO(Sa4dUs): Maybe this can be a tuple struct?
+// NOTE(Sa4dUs): Maybe this can be a tuple struct?
 #[derive(Clone)]
 pub(crate) struct AuthLayer {
     pub(crate) state: AppState,
@@ -59,8 +59,8 @@ where
                 None => return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
             };
 
-            // TODO(Sa4dUs): Make this decent once `config.path` is a HashMap
-            // TODO(Sa4dUs): Replace `unwrap` calls with better error handling
+            // FIXME(Sa4dUs): Make this decent once `config.path` is a HashMap
+            // FIXME(Sa4dUs): Replace `unwrap` calls with better error handling
             // We can unwrap because the router middleware checks if it's a valid route
             // but it would be better to return some type of `bug!()` like message
             let route = config
@@ -81,8 +81,15 @@ where
 
             // Check `Authorization: Bearer {TOKEN}`
             let token = match req.headers().get(&AUTHORIZATION) {
-                Some(val) => val.to_str().unwrap(), // TODO(Sa4dUs): Handle this error properly
+                Some(val) => val.to_str().unwrap(), // FIXME(Sa4dUs): Handle this error properly
                 None => return Ok(StatusCode::UNAUTHORIZED.into_response()),
+            };
+
+            // FIXME(Sa4dUs): This is prob not the right way to do this
+            let token = if let Some(stripped) = token.strip_prefix("Bearer ") {
+                stripped
+            } else {
+                return Ok(StatusCode::UNAUTHORIZED.into_response());
             };
 
             tracing::debug!("{token:?}");

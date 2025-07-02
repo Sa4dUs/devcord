@@ -30,6 +30,7 @@ dependencies = [
  "anyhow",
  "axum",
  "dotenv",
+ "http-body-util",
  "hyper",
  "jsonwebtoken",
  "rand",

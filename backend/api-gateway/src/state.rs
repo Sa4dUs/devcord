@@ -1,7 +1,7 @@
 use crate::config::Config;
 
 #[derive(Debug, Clone)]
-pub(crate) struct AppState {
+pub struct AppState {
     pub(crate) config: Config,
 }
 

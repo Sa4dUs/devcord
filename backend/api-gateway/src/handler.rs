@@ -19,15 +19,12 @@ pub(crate) async fn handler(
     Extension(service): Extension<Service>,
     mut req: Request,
 ) -> Result<Response<Body>, StatusCode> {
-    // MIDDLEWARE3: Load balancer
-    // TODO(Sa4dUs): Move load balancer logic away from here
+    // FIXME(Sa4dUs): Move load balancer logic away from here
     let Instance(uri) = service
         .instances
         .choose(&mut rand::rng())
         .ok_or(StatusCode::BAD_GATEWAY)?;
 
-    // MAIN
-    // MIDDLEWARE Body to bytes?
     let uri_str = format!("http://{uri}{subpath}");
     let uri: Uri = uri_str.parse().map_err(|_| StatusCode::BAD_GATEWAY)?;
     *req.uri_mut() = uri;
