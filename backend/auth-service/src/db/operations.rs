@@ -1,6 +1,6 @@
 use crate::db::password_hasher::verify_password;
 use crate::models::user_info::UserInfo;
-use sqlx::{Error as SqlxError, PgPool, Row};
+use sqlx::{Error as SqlxError, PgPool};
 use thiserror::Error;
 
 const UNIQUE_VIOLATED: &str = "23505";
@@ -17,17 +17,19 @@ pub async fn insert_user(
     pool: &PgPool,
     username: &str,
     hashed_password: &str,
+    email: &str,
     telephone: Option<&str>,
 ) -> Result<UserInfo, UserInsertError> {
     let res = sqlx::query_as::<_, UserInfo>(
         r#"
-        INSERT INTO users (username, hashed_password, telephone)
+        INSERT INTO users (username, hashed_password, email, telephone)
         VALUES ($1, $2, $3)
         RETURNING id, username, hashed_password, telephone
         "#,
     )
     .bind(username)
     .bind(hashed_password)
+    .bind(email)
     .bind(telephone)
     .fetch_one(pool)
     .await;

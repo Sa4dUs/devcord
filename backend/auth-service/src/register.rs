@@ -2,9 +2,8 @@ use crate::api_utils::responses::{INTERNAL_SERVER_ERROR, USERNAME_ALREADY_USED};
 use crate::db::operations::{UserInsertError, insert_user};
 use crate::db::password_hasher::hash_password;
 use crate::jwt::generate_jwt;
-use axum::{Extension, Json, http::StatusCode, response::IntoResponse};
+use axum::{Extension, Json, response::IntoResponse};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use sqlx::PgPool;
 use std::sync::Arc;
 
@@ -20,6 +19,7 @@ struct RegisterResponse {
 pub struct RegisterData {
     username: String,
     password: String,
+    email: String,
     telephone: Option<String>,
 }
 
@@ -37,6 +37,7 @@ pub async fn register_user(
         &pool,
         &entering_user.username,
         &hashed_password,
+        &entering_user.email,
         entering_user.telephone.as_deref(),
     )
     .await

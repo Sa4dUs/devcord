@@ -1,9 +1,6 @@
 use crate::register::register_user;
 use crate::sign_in::sign_in_user;
-use axum::{
-    Extension, Router,
-    routing::{get, post},
-};
+use axum::{Extension, routing::post};
 use dotenvy::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
