@@ -1,7 +1,7 @@
-use axum::{Extension, Json, http::StatusCode, response::IntoResponse};
+use axum::extract::State;
+use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use std::sync::Arc;
 
 use crate::api_utils::responses::INTERNAL_SERVER_ERROR;
 use crate::db::operations::verify_user_credentials;
@@ -21,18 +21,18 @@ pub struct SignInData {
 }
 
 pub async fn sign_in_user(
-    Extension(pool): Extension<Arc<PgPool>>,
+    State(pool): State<PgPool>,
     Json(entering_user): Json<SignInData>,
 ) -> impl IntoResponse {
-    if let Some(user_info) =
+    if let Some(auth_info) =
         verify_user_credentials(&pool, &entering_user.username, &entering_user.password).await
     {
-        match generate_jwt(user_info.id) {
+        match generate_jwt(auth_info.id) {
             Ok(token) => {
                 let response = SignInResponse {
                     token,
-                    user_id: user_info.id,
-                    username: user_info.username,
+                    user_id: auth_info.id,
+                    username: auth_info.username,
                 };
                 Json(response).into_response()
             }

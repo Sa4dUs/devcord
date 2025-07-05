@@ -2,10 +2,10 @@ use crate::api_utils::responses::{INTERNAL_SERVER_ERROR, USERNAME_ALREADY_USED};
 use crate::db::operations::{UserInsertError, insert_user};
 use crate::db::password_hasher::hash_password;
 use crate::jwt::generate_jwt;
+use axum::extract::State;
 use axum::{Extension, Json, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use std::sync::Arc;
 
 // Probably will be changed
 #[derive(Serialize)]
@@ -24,7 +24,7 @@ pub struct RegisterData {
 }
 
 pub async fn register_user(
-    Extension(pool): Extension<Arc<PgPool>>,
+    State(pool): State<PgPool>,
     Json(entering_user): Json<RegisterData>,
 ) -> impl IntoResponse {
     //This should be better traced

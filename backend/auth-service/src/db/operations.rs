@@ -1,5 +1,5 @@
 use crate::db::password_hasher::verify_password;
-use crate::models::user_info::UserInfo;
+use crate::models::{auth_info::AuthInfo, user_info::UserInfo};
 use sqlx::{Error as SqlxError, PgPool};
 use thiserror::Error;
 
@@ -7,7 +7,7 @@ const UNIQUE_VIOLATED: &str = "23505";
 
 #[derive(Debug, Error)]
 pub enum UserInsertError {
-    #[error("The username is already taken")]
+    #[error("The email or the username is already in used")]
     UsernameTaken,
     #[error("Database not working properly")]
     Database(#[from] SqlxError),
@@ -23,8 +23,8 @@ pub async fn insert_user(
     let res = sqlx::query_as::<_, UserInfo>(
         r#"
         INSERT INTO users (username, hashed_password, email, telephone)
-        VALUES ($1, $2, $3)
-        RETURNING id, username, hashed_password, telephone
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, username, hashed_password, email, telephone
         "#,
     )
     .bind(username)
@@ -84,10 +84,10 @@ pub async fn verify_user_credentials(
     pool: &PgPool,
     username: &str,
     password: &str,
-) -> Option<UserInfo> {
-    let result = sqlx::query_as::<_, UserInfo>(
+) -> Option<AuthInfo> {
+    let result = sqlx::query_as::<_, AuthInfo>(
         r#"
-        SELECT id, username, hashed_password, telephone
+        SELECT id, username, hashed_password
         FROM users
         WHERE username = $1
         "#,
