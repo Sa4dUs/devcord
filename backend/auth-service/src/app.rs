@@ -5,7 +5,7 @@ use crate::sign_in::sign_in_user;
 
 use axum::{Router, routing::post};
 use dotenvy::dotenv;
-use fluvio::{Fluvio, TopicProducer};
+use fluvio::Fluvio;
 use sqlx::postgres::PgPoolOptions;
 use std::{env, time::Duration};
 

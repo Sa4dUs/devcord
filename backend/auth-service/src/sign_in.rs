@@ -2,13 +2,13 @@ use axum::extract::State;
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use bincode;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::api_utils::responses::INTERNAL_SERVER_ERROR;
 use crate::db::operations::verify_user_credentials;
 use crate::jwt::generate_jwt;
 use crate::models::app_state::AppState;
+use topic_structs::UserLoggedIn;
 
 #[derive(Serialize)]
 struct SignInResponse {
@@ -41,8 +41,10 @@ pub async fn sign_in_user(
             login_time,
         };
 
-        let payload = bincode::encode_to_vec(&event, bincode::config::standard())
-            .map_err(|_| INTERNAL_SERVER_ERROR)?;
+        let payload = match bincode::encode_to_vec(&event, bincode::config::standard()) {
+            Ok(bytes) => bytes,
+            Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
+        };
 
         if let Err(e) = state.producer.send(payload).await {
             eprintln!("The event loggin couldn't be send through fluvio: {:?}", e);

@@ -11,7 +11,7 @@ pub(crate) struct Claims {
     user_id: String,
 }
 
-pub fn generate_jwt(user_id: i32) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_jwt(user_id: String) -> Result<String, jsonwebtoken::errors::Error> {
     let expiration = Utc::now()
         .checked_add_signed(Duration::hours(24))
         .expect("timestamp")
@@ -19,7 +19,7 @@ pub fn generate_jwt(user_id: i32) -> Result<String, jsonwebtoken::errors::Error>
 
     let claims = Claims {
         exp: expiration,
-        user_id: user_id.to_string(),
+        user_id: user_id,
     };
 
     let secret = env::var("JWT_SECRET").expect("JWT_SECRET not defined in .env");

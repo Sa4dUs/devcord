@@ -1,7 +1,9 @@
 use crate::db::password_hasher::verify_password;
 use crate::models::{auth_info::AuthInfo, user_info::UserInfo};
+
 use sqlx::{Error as SqlxError, PgPool};
 use thiserror::Error;
+use uuid::Uuid;
 
 const UNIQUE_VIOLATED: &str = "23505";
 

@@ -6,10 +6,8 @@ use crate::models::app_state::AppState;
 
 use axum::extract::State;
 use axum::{Json, response::IntoResponse};
-use bincode::{Encode, config::standard, encode_to_vec};
-use fluvio::TopicProducer;
+use bincode::{config::standard, encode_to_vec};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use topic_structs::UserCreated;
 
 #[derive(Serialize)]
