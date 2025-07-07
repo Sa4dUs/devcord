@@ -47,8 +47,9 @@ pub async fn run() -> Result<()> {
         .route("/register", post(register_user))
         .route("/sign_in", post(sign_in_user))
         .route("/log_out", post(log_user_out))
-        .with_state(state)
-        .layer(TraceLayer::new_for_http());
+        .layer(TraceLayer::new_for_http())
+        .with_state(state);
+
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     info!("Server listening on 0.0.0.0:3000");
