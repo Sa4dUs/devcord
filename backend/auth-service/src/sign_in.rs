@@ -36,7 +36,7 @@ pub async fn sign_in_user(
             .as_secs() as i64;
 
         let event = UserLoggedIn {
-            id: auth_info.id,
+            id: auth_info.clone().id,
             username: auth_info.username.clone(),
             login_time,
         };
@@ -46,11 +46,13 @@ pub async fn sign_in_user(
             Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
         };
 
-        if let Err(e) = state.producer.send(payload).await {
-            eprintln!("The event loggin couldn't be send through fluvio: {:?}", e);
+        // FIXME(Sa4dUs): `fluvio::RecordKey::NULL` works for now, but we'll probably
+        // want to pass some type of identifier (maybe user_id?)
+        if let Err(e) = state.producer.send(fluvio::RecordKey::NULL, payload).await {
+            eprintln!("The event loggin couldn't be send through fluvio: {e:?}");
         }
 
-        match generate_jwt(auth_info.id) {
+        match generate_jwt(auth_info.clone().id) {
             Ok(token) => {
                 let response = SignInResponse {
                     token,

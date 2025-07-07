@@ -48,13 +48,13 @@ pub async fn register_user(
         Err(UserInsertError::Database(_)) => return INTERNAL_SERVER_ERROR.into_response(),
     };
 
-    let token = match generate_jwt(user_info.id) {
+    let token = match generate_jwt(user_info.id.clone()) {
         Ok(t) => t,
         Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
     };
 
     let event = UserCreated {
-        id: user_info.id,
+        id: user_info.id.clone(),
         username: user_info.username.clone(),
     };
 
@@ -65,7 +65,7 @@ pub async fn register_user(
 
     if let Err(e) = state
         .producer
-        .send(&user_info.id.to_string(), event_bytes)
+        .send(&*user_info.id.to_string(), event_bytes)
         .await
     {
         eprintln!("Failed to send event to Fluvio: {}", e);

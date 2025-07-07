@@ -19,7 +19,7 @@ pub async fn log_user_off(State(state): State<AppState>, user_id: String) -> imp
         Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
     };
 
-    if let Err(e) = state.producer.send(&user_id, event_bytes).await {
+    if let Err(e) = state.producer.send(&*user_id, event_bytes).await {
         eprintln!("Failed to send UserLoggedOff event to Fluvio: {}", e);
         return INTERNAL_SERVER_ERROR.into_response();
     }
