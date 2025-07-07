@@ -152,7 +152,7 @@ pub async fn get_request_sent(
     Query(query): Query<RequestFriendRequestSent>,
 ) -> Either<Json<Option<Vec<PublicFriendRequestSent>>>, impl IntoResponse> {
     if get_public_user(&claims.user_id, &state.db).await.is_none() {
-        return E2(responses::USER_DOES_NOT_EXIST)
+        return E2(responses::USER_DOES_NOT_EXIST);
     }
 
     let requests =
