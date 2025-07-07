@@ -19,7 +19,7 @@ pub struct UserLoggedIn {
 }
 
 #[derive(Encode, Decode, Debug, Clone, Default)]
-pub struct UserLoggedOff {
+pub struct UserLoggedOut {
     pub id: String,
     pub logout_time: i64,
 }

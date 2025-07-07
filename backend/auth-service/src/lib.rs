@@ -2,7 +2,7 @@ pub mod api_utils;
 pub mod app;
 pub mod db;
 pub mod jwt;
-pub mod logoff;
+pub mod log_out;
 pub mod models;
 pub mod register;
 pub mod sign_in;

@@ -1,5 +1,6 @@
 use axum::{Json, http::StatusCode};
 use serde::Serialize;
+
 #[derive(Serialize, Clone, Copy)]
 pub struct ApiResponseMessage {
     pub message: &'static str,

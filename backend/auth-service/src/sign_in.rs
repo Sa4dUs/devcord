@@ -27,43 +27,45 @@ pub async fn sign_in_user(
     State(state): State<AppState>,
     Json(entering_user): Json<SignInData>,
 ) -> impl IntoResponse {
-    if let Some(auth_info) =
-        verify_user_credentials(&state.db, &entering_user.username, &entering_user.password).await
-    {
-        let login_time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs() as i64;
-
-        let event = UserLoggedIn {
-            id: auth_info.clone().id,
-            username: auth_info.username.clone(),
-            login_time,
+    let auth_info =
+        match verify_user_credentials(&state.db, &entering_user.username, &entering_user.password)
+            .await
+        {
+            Some(info) => info,
+            None => return (StatusCode::UNAUTHORIZED, "Invalid credentials").into_response(),
         };
 
-        let payload = match bincode::encode_to_vec(&event, bincode::config::standard()) {
-            Ok(bytes) => bytes,
-            Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
-        };
+    // sigue el resto sin indentación adicional
+    let login_time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
 
-        // FIXME(Sa4dUs): `fluvio::RecordKey::NULL` works for now, but we'll probably
-        // want to pass some type of identifier (maybe user_id?)
-        if let Err(e) = state.producer.send(fluvio::RecordKey::NULL, payload).await {
-            eprintln!("The event loggin couldn't be send through fluvio: {e:?}");
-        }
+    let event = UserLoggedIn {
+        id: auth_info.clone().id,
+        username: auth_info.username.clone(),
+        login_time,
+    };
 
-        match generate_jwt(auth_info.clone().id) {
-            Ok(token) => {
-                let response = SignInResponse {
-                    token,
-                    user_id: auth_info.id,
-                    username: auth_info.username,
-                };
-                Json(response).into_response()
-            }
-            Err(_) => INTERNAL_SERVER_ERROR.into_response(),
-        }
-    } else {
-        (StatusCode::UNAUTHORIZED, "Invalid credentials").into_response()
+    let payload = match bincode::encode_to_vec(&event, bincode::config::standard()) {
+        Ok(bytes) => bytes,
+        Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
+    };
+
+    if let Err(e) = state.producer.send(fluvio::RecordKey::NULL, payload).await {
+        tracing::error!("The event logging couldn't be sent through Fluvio: {:?}", e);
     }
+
+    let token = match generate_jwt(auth_info.clone().id) {
+        Ok(t) => t,
+        Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
+    };
+
+    let response = SignInResponse {
+        token,
+        user_id: auth_info.id,
+        username: auth_info.username,
+    };
+
+    Json(response).into_response()
 }

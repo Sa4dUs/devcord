@@ -4,12 +4,13 @@ use axum::extract::State;
 use axum::{Json, response::IntoResponse};
 use bincode::{config::standard, encode_to_vec};
 use chrono::Utc;
-use topic_structs::UserLoggedOff;
+use topic_structs::UserLoggedOut;
+use tracing::error;
 
-pub async fn log_user_off(State(state): State<AppState>, user_id: String) -> impl IntoResponse {
+pub async fn log_user_outf(State(state): State<AppState>, user_id: String) -> impl IntoResponse {
     let logout_time = Utc::now().timestamp();
 
-    let event = UserLoggedOff {
+    let event = UserLoggedOut {
         id: user_id.clone(),
         logout_time,
     };
@@ -20,9 +21,9 @@ pub async fn log_user_off(State(state): State<AppState>, user_id: String) -> imp
     };
 
     if let Err(e) = state.producer.send(&*user_id, event_bytes).await {
-        eprintln!("Failed to send UserLoggedOff event to Fluvio: {}", e);
+        error!("Failed to send UserLoggedOut event to Fluvio: {}", e);
         return INTERNAL_SERVER_ERROR.into_response();
     }
 
-    Json("User logged off successfully").into_response()
+    Json("User logged out successfully").into_response()
 }
