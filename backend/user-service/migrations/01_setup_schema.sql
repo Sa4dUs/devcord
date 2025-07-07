@@ -15,14 +15,25 @@ CREATE TABLE IF NOT EXISTS friendships (
     CONSTRAINT no_self_friendship CHECK (from_user_id <> to_user_id)
 );
 
-CREATE TABLE IF NOT EXISTS friend_requests (
-    id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS blocks (
     from_user_id TEXT NOT NULL,
     to_user_id TEXT NOT NULL,
-    state TEXT NOT NULL DEFAULT 'PENDING', -- PENDING | ACCEPTED | DENIED
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT blocks_pkey PRIMARY KEY (from_user_id, to_user_id),
+    CONSTRAINT fk_from_user FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_to_user FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT no_self_block CHECK (from_user_id <> to_user_id)
+);
+
+CREATE TABLE IF NOT EXISTS friend_requests (
+    from_user_id TEXT NOT NULL,
+    to_user_id TEXT NOT NULL,
+    state TEXT NOT NULL DEFAULT 'pending', -- pending | accepted | rejected
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     responded_at TIMESTAMP WITH TIME ZONE,
 
+    CONSTRAINT friend_requestpkey PRIMARY KEY (from_user_id, to_user_id),
     CONSTRAINT fk_from_user FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_to_user FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT no_self_request CHECK (from_user_id <> to_user_id),

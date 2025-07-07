@@ -3,30 +3,41 @@ use std::{env::var, net::SocketAddr, sync::Arc};
 use axum::{
     Router,
     http::{HeaderValue, Method, header},
-    routing::post,
+    routing::{get, post},
     serve,
 };
-use fluvio::{FluvioConfig, metadata::topic::TopicSpec};
+use fluvio::{FluvioConfig, TopicProducer, metadata::topic::TopicSpec, spu::SpuSocketPool};
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing::Level;
+use tracing_subscriber::{Layer, filter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
+    api_utils::structs::PrivateUser,
     fluvio_consumer,
-    friendships::{accept, deny, request},
-    update::update,
+    jwt::authorize,
+    request::{
+        block::{block_user, get_blocked, unblock_user},
+        friendships::{
+            accept_friend, get_request_recieved, get_request_sent, reject_friend, request_friend,
+        },
+    },
+    sql_utils::calls::insert_user,
 };
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: sqlx::PgPool,
-    pub producer: fluvio::TopicProducer<fluvio::spu::SpuSocketPool>,
+    pub producer: TopicProducer<SpuSocketPool>,
 }
 
 pub async fn run() -> anyhow::Result<()> {
     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer())
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_filter(filter::LevelFilter::from_level(Level::DEBUG)),
+        )
         .init();
 
     let origins: Vec<HeaderValue> = var("CORS_ORIGIN")
@@ -96,16 +107,40 @@ pub async fn run() -> anyhow::Result<()> {
 
     let producer = fluvio.topic_producer(producer_topic).await?;
 
+    //ONLY FOR TESTING
+
+    let user_a = PrivateUser {
+        id: "a".to_owned(),
+        username: "a_username".to_owned(),
+        created_at: None,
+    };
+
+    let user_b = PrivateUser {
+        id: "b".to_owned(),
+        username: "b_username".to_owned(),
+        created_at: None,
+    };
+
+    insert_user(user_a, &db).await.ok();
+    insert_user(user_b, &db).await.ok();
+
+    //NO LONGER FOR TESTING
+
     let state = Arc::new(AppState {
         db: db.clone(),
         producer,
     });
 
     let app = Router::new()
-        .route("/update", post(update))
-        .route("/request", post(request))
-        .route("/accept", post(accept))
-        .route("/deny", post(deny))
+        .route("/friend", post(request_friend))
+        .route("/accept", post(accept_friend))
+        .route("/reject", post(reject_friend))
+        .route("/requestsent", get(get_request_sent))
+        .route("/requestrecieved", get(get_request_recieved))
+        .route("/block", post(block_user).get(get_blocked))
+        .route("/unblock", post(unblock_user))
+        .route("/auth", get(authorize))
+        .route("/health", get(|| async { "Healthy " }))
         .layer(cors_layer)
         .layer(trace_layer)
         .with_state(state);

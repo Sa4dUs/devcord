@@ -104,6 +104,7 @@ services:
       - FLUVIO_ADDR=sc:9003
       - PRODUCER_TOPIC=user
       - CONSUMER_TOPIC=auth
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
       - CARGO_ENV
     networks:
       - backend
