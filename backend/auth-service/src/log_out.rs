@@ -7,7 +7,7 @@ use chrono::Utc;
 use topic_structs::UserLoggedOut;
 use tracing::error;
 
-pub async fn log_user_outf(State(state): State<AppState>, user_id: String) -> impl IntoResponse {
+pub async fn log_user_out(State(state): State<AppState>, user_id: String) -> impl IntoResponse {
     let logout_time = Utc::now().timestamp();
 
     let event = UserLoggedOut {

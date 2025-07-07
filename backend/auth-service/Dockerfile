@@ -2,7 +2,7 @@ FROM rust:1.87 AS builder
 
 WORKDIR /usr/src/app
 
-COPY ./auth-service/Cargo.toml ./user-service/Cargo.lock ./
+COPY ./auth-service/Cargo.toml ./auth-service/Cargo.lock ./
 COPY ./auth-service/src ./src
 COPY ./auth-service/migrations ./migrations
 COPY topic_structs ../topic_structs
