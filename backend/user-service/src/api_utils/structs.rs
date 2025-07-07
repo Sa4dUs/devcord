@@ -79,6 +79,13 @@ pub struct RequestFriendRequest {
 
 #[allow(dead_code)]
 #[derive(Debug, Default, Serialize, Deserialize)]
+pub struct RequestUsersBlocked {
+    pub from: i64,
+    pub to: i64,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RequestUserBlock {
     pub to_user_username: UserUsername,
 }

@@ -1,18 +1,17 @@
 use std::sync::Arc;
 
-use axum::{Json, extract::State, response::IntoResponse};
+use axum::{extract::{Query, State}, response::IntoResponse, Json};
+use axum_extra::either::Either::{self, E1, E2};
 
 use crate::{
     api_utils::{
         responses,
-        structs::{PrivateBlocked, RequestUserBlock},
+        structs::{PrivateBlocked, PublicBlocked, RequestUserBlock, RequestUsersBlocked},
     },
     app::AppState,
     jwt::Claims,
     sql_utils::calls::{
-        delete_block, delete_friend_request, delete_friendship, get_private_block,
-        get_private_friend_request, get_private_friendship, get_private_user, get_public_user,
-        get_undirected_private_friend_requests, insert_block,
+        delete_block, delete_friend_request, delete_friendship, get_private_block, get_private_friend_request, get_private_friendship, get_private_user, get_public_blocks, get_public_user, get_undirected_private_friend_requests, insert_block
     },
 };
 
@@ -94,4 +93,17 @@ pub async fn unblock_user(
     responses::BLOCK_REMOVED
 }
 
-pub async fn get_blocked() {}
+pub async fn get_blocked(
+    State(state): State<Arc<AppState>>,
+    claims: Claims,
+    Query(query): Query<RequestUsersBlocked>,
+) -> Either<Json<Option<Vec<PublicBlocked>>>, impl IntoResponse> {
+    if get_public_user(&claims.user_id, &state.db).await.is_none() {
+        return E2(responses::USER_DOES_NOT_EXIST);
+    }
+
+    let requests =
+        get_public_blocks(&claims.user_id, query.from, query.to, &state.db).await;
+
+    E1(Json(requests))
+}
