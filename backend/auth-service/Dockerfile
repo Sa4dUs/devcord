@@ -2,10 +2,10 @@ FROM rust:1.87 AS builder
 
 WORKDIR /usr/src/app
 
-COPY Cargo.toml Cargo.lock ./
-COPY src ./src
-COPY migrations ./migrations
-
+COPY ./auth-service/Cargo.toml ./user-service/Cargo.lock ./
+COPY ./auth-service/src ./src
+COPY ./auth-service/migrations ./migrations
+COPY topic_structs ../topic_structs
 ARG BUILD_MODE=release
 
 RUN echo "Building in $BUILD_MODE mode"

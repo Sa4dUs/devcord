@@ -20,13 +20,15 @@ pub async fn insert_user(
     email: &str,
     telephone: Option<&str>,
 ) -> Result<UserInfo, UserInsertError> {
+    let id = Uuid::new_v4().to_string();
     let res = sqlx::query_as::<_, UserInfo>(
         r#"
-        INSERT INTO users (username, hashed_password, email, telephone)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO users (id, username, hashed_password, email, telephone)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id, username, hashed_password, email, telephone
         "#,
     )
+    .bind(&id)
     .bind(username)
     .bind(hashed_password)
     .bind(email)

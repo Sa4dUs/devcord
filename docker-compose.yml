@@ -29,8 +29,8 @@ services:
 
   auth-service:
     build:
-      context: ./backend/auth-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: ./auth-service/Dockerfile
     ports:
       - "3001:3000"
     environment:
