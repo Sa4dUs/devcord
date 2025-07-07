@@ -48,7 +48,7 @@ pub async fn register_user(
         Err(UserInsertError::Database(_)) => return INTERNAL_SERVER_ERROR.into_response(),
     };
 
-    let token = match generate_jwt(&user_info.id) {
+    let token = match generate_jwt(user_info.id) {
         Ok(t) => t,
         Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
     };
