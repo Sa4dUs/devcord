@@ -1,5 +1,6 @@
 use crate::api_utils::responses::{INTERNAL_SERVER_ERROR, USERNAME_ALREADY_USED};
-use crate::db::operations::{UserInsertError, insert_user};
+use crate::db::db_errors::UserInsertError;
+use crate::db::operations::insert_user;
 use crate::db::password_hasher::hash_password;
 use crate::jwt::generate_jwt;
 use crate::models::app_state::AppState;
