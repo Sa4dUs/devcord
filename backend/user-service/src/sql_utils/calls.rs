@@ -388,8 +388,7 @@ pub async fn update_friend_request_state(
     .bind(friend_request.from_user_id)
     .bind(friend_request.to_user_id)
     .execute(db)
-    .await
-    .ok();
+    .await?;
 
     Ok(())
 }
