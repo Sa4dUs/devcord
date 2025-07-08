@@ -37,6 +37,9 @@ services:
       - CARGO_ENV
       - AUTH_DATABASE_URL=postgres://postgres:password@auth-db:5432/psqldb
       - JWT_SECRET="justalongenoughkeyforhs256algorithm"
+      - DB_MAX_CONNECTIONS= 5
+      - DB_POOL_TIMEOUT_SECS=3
+      - RUST_LOG=info
     networks:
       - backend
 

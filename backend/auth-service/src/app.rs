@@ -10,10 +10,25 @@ use fluvio::Fluvio;
 use sqlx::postgres::PgPoolOptions;
 use std::{env, time::Duration};
 use tower_http::trace::TraceLayer;
+
 use tracing::info;
 
 pub async fn run() -> Result<()> {
     dotenv().ok();
+
+    let origins: Vec<HeaderValue> = var("CORS_ORIGIN")
+        .expect("CORS_ORIGIN env not set")
+        .split(",")
+        .map(|e| e.trim().parse::<HeaderValue>())
+        .collect::<Result<_, _>>()?;
+
+    let cors_layer = CorsLayer::new()
+        .allow_origin(origins)
+        .allow_credentials(true)
+        .allow_methods([Method::GET, Method::POST])
+        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]);
+
+    let trace_layer = TraceLayer::new_for_http();
 
     let database_url = env::var("AUTH_DATABASE_URL")
         .map_err(|_| anyhow::anyhow!("AUTH_DATABASE_URL must be set in .env"))?;
@@ -47,9 +62,9 @@ pub async fn run() -> Result<()> {
         .route("/register", post(register_user))
         .route("/sign_in", post(sign_in_user))
         .route("/log_out", post(log_user_out))
-        .layer(TraceLayer::new_for_http())
+        .layer(cors_layer)
+        .layer(trace_layer)
         .with_state(state);
-
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     info!("Server listening on 0.0.0.0:3000");
