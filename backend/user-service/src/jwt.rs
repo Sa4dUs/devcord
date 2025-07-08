@@ -57,6 +57,7 @@ where
     }
 }
 
+//This should be a common crate for all services, dead code is allowed to preserve the common structure
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum AuthError {
