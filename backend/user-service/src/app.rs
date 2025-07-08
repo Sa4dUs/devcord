@@ -16,7 +16,6 @@ use tracing_subscriber::{Layer, filter, layer::SubscriberExt, util::SubscriberIn
 use crate::{
     api_utils::structs::PrivateUser,
     fluvio_consumer,
-    jwt::authorize,
     request::{
         block::{block_user, get_blocked, unblock_user},
         friendships::{

@@ -10,7 +10,7 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -20,14 +20,12 @@ static KEYS: LazyLock<Keys> = LazyLock::new(|| {
 });
 
 struct Keys {
-    encoding: EncodingKey,
     decoding: DecodingKey,
 }
 
 impl Keys {
     fn new(secret: &[u8]) -> Self {
         Self {
-            encoding: EncodingKey::from_secret(secret),
             decoding: DecodingKey::from_secret(secret),
         }
     }
@@ -59,6 +57,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum AuthError {
     WrongCredentials,
@@ -82,40 +81,8 @@ impl IntoResponse for AuthError {
     }
 }
 
-pub async fn authorize() -> Result<Json<(AuthBody, AuthBody)>, AuthError> {
-    let claims_a = Claims {
-        user_id: "a".to_owned(),
-        // Mandatory expiry time as UTC timestamp
-        exp: 2000000000, // May 2033
-    };
-    // Create the authorization token
-    let token_a = encode(&Header::default(), &claims_a, &KEYS.encoding)
-        .map_err(|_| AuthError::TokenCreation)?;
-
-    let claims_b = Claims {
-        user_id: "b".to_owned(),
-        // Mandatory expiry time as UTC timestamp
-        exp: 2000000000, // May 2033
-    };
-    // Create the authorization token
-    let token_b = encode(&Header::default(), &claims_b, &KEYS.encoding)
-        .map_err(|_| AuthError::TokenCreation)?;
-
-    // Send the authorized token
-    Ok(Json((AuthBody::new(token_a), AuthBody::new(token_b))))
-}
-
 #[derive(Debug, Serialize)]
 pub struct AuthBody {
     access_token: String,
     token_type: String,
-}
-
-impl AuthBody {
-    fn new(access_token: String) -> Self {
-        Self {
-            access_token,
-            token_type: "Bearer".to_string(),
-        }
-    }
 }
