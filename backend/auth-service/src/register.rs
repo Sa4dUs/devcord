@@ -10,6 +10,7 @@ use axum::{Json, response::IntoResponse};
 use bincode::{config::standard, encode_to_vec};
 use serde::{Deserialize, Serialize};
 use topic_structs::UserCreated;
+use tracing::error;
 
 #[derive(Serialize)]
 struct RegisterResponse {
@@ -69,7 +70,7 @@ pub async fn register_user(
         .send(&*user_info.id.to_string(), event_bytes)
         .await
     {
-        eprintln!("Failed to send event to Fluvio: {}", e);
+        error!("Failed to send event to Fluvio: {}", e);
         return INTERNAL_SERVER_ERROR.into_response();
     }
 

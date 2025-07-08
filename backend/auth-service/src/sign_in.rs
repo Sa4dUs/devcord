@@ -9,6 +9,7 @@ use crate::db::operations::verify_user_credentials;
 use crate::jwt::generate_jwt;
 use crate::models::app_state::AppState;
 use topic_structs::UserLoggedIn;
+use tracing::error;
 
 #[derive(Serialize)]
 struct SignInResponse {
@@ -52,7 +53,7 @@ pub async fn sign_in_user(
     };
 
     if let Err(e) = state.producer.send(fluvio::RecordKey::NULL, payload).await {
-        tracing::error!("The event logging couldn't be sent through Fluvio: {:?}", e);
+        error!("The event logging couldn't be sent through Fluvio: {:?}", e);
     }
 
     let token = match generate_jwt(auth_info.clone().id) {
