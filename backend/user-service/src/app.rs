@@ -141,8 +141,9 @@ pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
         .route("/friends", get(get_friends));
 
     let block_router = Router::new()
-        .route("/block", post(block_user).get(get_blocked))
-        .route("/unblock", post(unblock_user));
+        .route("/block", post(block_user))
+        .route("/unblock", post(unblock_user))
+        .route("/", get(get_blocked));
 
     let app = Router::new()
         .nest("/friendship", friendships_router)

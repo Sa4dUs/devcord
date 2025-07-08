@@ -62,7 +62,7 @@ pub struct PrivateFriendRequest {
 pub struct PublicFriendRequestSent {
     #[sqlx(rename = "username")]
     pub to_user_username: UserUsername,
-    pub status: String,
+    pub state: String,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -71,7 +71,7 @@ pub struct PublicFriendRequestSent {
 pub struct PublicFriendRequestReceived {
     #[sqlx(rename = "username")]
     pub from_user_username: UserUsername,
-    pub status: String,
+    pub state: String,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -126,8 +126,7 @@ pub struct PrivateFriendship {
 #[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Serialize, Deserialize)]
 pub struct PublicFriendship {
-    #[sqlx(rename = "username")]
-    pub to_user_username: UserUsername,
+    pub username: UserUsername,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -142,8 +141,7 @@ pub struct PrivateBlocked {
 #[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Deserialize, Serialize)]
 pub struct PublicBlocked {
-    #[sqlx(rename = "username")]
-    pub to_user_username: UserUsername,
+    pub username: UserUsername,
     pub created_at: Option<String>,
 }
 

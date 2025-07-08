@@ -66,12 +66,12 @@ pub async fn get_public_friend_requests_received(
 
     sqlx::query_as(
         "
-        SELECT u.username, fr.status, fr.created_at 
+        SELECT u.username, fr.state, fr.created_at 
         FROM friend_requests fr
-        WHERE fr.to_user_id = $1
         JOIN users u
         ON u.id = fr.from_user_id 
-        SORT BY fr.created_at
+        WHERE fr.to_user_id = $1
+        ORDER BY fr.created_at
         LIMIT $2 OFFSET $3
     ",
     )
@@ -97,12 +97,12 @@ pub async fn get_public_friend_requests_sent(
 
     sqlx::query_as(
         "
-        SELECT u.username, fr.status, fr.created_at 
+        SELECT u.username, fr.state, fr.created_at 
         FROM friend_requests fr
-        WHERE fr.from_user_id = $1
         JOIN users u
         ON u.id = fr.to_user_id 
-        SORT BY fr.created_at
+        WHERE fr.from_user_id = $1
+        ORDER BY fr.created_at
         LIMIT $2 OFFSET $3
     ",
     )
@@ -130,10 +130,10 @@ pub async fn get_public_friendships(
         "
         SELECT u.username, fr.created_at 
         FROM friendships fr
-        WHERE fr.to_user_id = $1
         JOIN users u
         ON u.id = fr.from_user_id 
-        SORT BY fr.created_at
+        WHERE fr.to_user_id = $1
+        ORDER BY fr.created_at
         LIMIT $2 OFFSET $3
     ",
     )
@@ -174,8 +174,8 @@ pub async fn get_public_blocks(
         "
         SELECT u.username, b.created_at
         FROM blocks b
-        WHERE b.from_user_id = $1
         JOIN users u ON u.id = b.to_user_id
+        WHERE b.from_user_id = $1
         ORDER BY b.created_at DESC
         OFFSET $2
         LIMIT $3
