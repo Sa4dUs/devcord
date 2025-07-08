@@ -6,25 +6,21 @@ use sqlx::prelude::FromRow;
 
 use crate::api_utils::types::{UserID, UserUsername};
 
-#[allow(dead_code)]
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub enum RequestUpdateProfileEnum {
     Username,
 }
 
-#[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Deserialize, Serialize)]
 pub struct RequestUpdateProfile {
     pub query: HashMap<RequestUpdateProfileEnum, String>,
 }
 
-#[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Deserialize, Serialize)]
 pub struct RequestUserProfile {
     pub user_username: UserUsername,
 }
 
-#[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Deserialize, Serialize)]
 pub struct PrivateUser {
     pub id: UserID,
@@ -32,14 +28,12 @@ pub struct PrivateUser {
     pub created_at: Option<DateTime<Utc>>,
 }
 
-#[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Deserialize, Serialize)]
 pub struct PublicUser {
     pub username: UserUsername,
     pub created_at: Option<DateTime<Utc>>,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub enum FriendRequestState {
     #[default]
@@ -48,7 +42,6 @@ pub enum FriendRequestState {
     Rejected,
 }
 
-#[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Serialize, Deserialize)]
 pub struct PrivateFriendRequest {
     pub from_user_id: UserID,
@@ -57,7 +50,6 @@ pub struct PrivateFriendRequest {
     pub created_at: Option<DateTime<Utc>>,
 }
 
-#[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Serialize, Deserialize)]
 pub struct PublicFriendRequestSent {
     #[sqlx(rename = "username")]
@@ -66,7 +58,6 @@ pub struct PublicFriendRequestSent {
     pub created_at: Option<DateTime<Utc>>,
 }
 
-#[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Serialize, Deserialize)]
 pub struct PublicFriendRequestReceived {
     #[sqlx(rename = "username")]
@@ -75,47 +66,40 @@ pub struct PublicFriendRequestReceived {
     pub created_at: Option<DateTime<Utc>>,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RequestFriendRequestRecieved {
     pub from: i64,
     pub to: i64,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RequestFriendRequestSent {
     pub from: i64,
     pub to: i64,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RequestFriendRequest {
     pub to_user_username: UserUsername,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RequestUsersBlocked {
     pub from: i64,
     pub to: i64,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RequestUserBlock {
     pub to_user_username: UserUsername,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RequestFriendships {
     pub from: i64,
     pub to: i64,
 }
 
-#[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Serialize, Deserialize)]
 pub struct PrivateFriendship {
     pub from_user_id: UserID,
@@ -123,14 +107,12 @@ pub struct PrivateFriendship {
     pub created_at: Option<DateTime<Utc>>,
 }
 
-#[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Serialize, Deserialize)]
 pub struct PublicFriendship {
     pub username: UserUsername,
     pub created_at: Option<DateTime<Utc>>,
 }
 
-#[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Deserialize, Serialize)]
 pub struct PrivateBlocked {
     pub from_user_id: UserID,
@@ -138,7 +120,6 @@ pub struct PrivateBlocked {
     pub created_at: Option<DateTime<Utc>>,
 }
 
-#[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Deserialize, Serialize)]
 pub struct PublicBlocked {
     pub username: UserUsername,
