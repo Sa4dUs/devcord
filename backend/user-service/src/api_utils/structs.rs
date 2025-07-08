@@ -1,10 +1,28 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 
 use crate::api_utils::types::{UserID, UserUsername};
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
+pub enum RequestUpdateProfileEnum {
+    Username,
+}
+
+#[allow(dead_code)]
+#[derive(FromRow, Debug, Default, Deserialize, Serialize)]
+pub struct RequestUpdateProfile {
+    pub query: HashMap<RequestUpdateProfileEnum, String>,
+}
+
+#[allow(dead_code)]
+#[derive(FromRow, Debug, Default, Deserialize, Serialize)]
+pub struct RequestUserProfile {
+    pub user_username: UserUsername,
+}
 
 #[allow(dead_code)]
 #[derive(FromRow, Debug, Default, Deserialize, Serialize)]
@@ -88,6 +106,13 @@ pub struct RequestUsersBlocked {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RequestUserBlock {
     pub to_user_username: UserUsername,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct RequestFriendships {
+    pub from: i64,
+    pub to: i64,
 }
 
 #[allow(dead_code)]

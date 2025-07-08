@@ -1,6 +1,6 @@
 use crate::api_utils::structs::{
     PrivateBlocked, PrivateFriendRequest, PrivateFriendship, PrivateUser, PublicBlocked,
-    PublicFriendRequestReceived, PublicFriendRequestSent, PublicUser,
+    PublicFriendRequestReceived, PublicFriendRequestSent, PublicFriendship, PublicUser,
 };
 
 //--------------------GETTERS--------------------
@@ -102,6 +102,37 @@ pub async fn get_public_friend_requests_sent(
         WHERE fr.from_user_id = $1
         JOIN users u
         ON u.id = fr.to_user_id 
+        SORT BY fr.created_at
+        LIMIT $2 OFFSET $3
+    ",
+    )
+    .bind(from_user_id)
+    .bind(limit)
+    .bind(from)
+    .fetch_all(db)
+    .await
+    .ok()
+}
+
+pub async fn get_public_friendships(
+    from_user_id: &str,
+    from: i64,
+    to: i64,
+    db: &sqlx::PgPool,
+) -> Option<Vec<PublicFriendship>> {
+    if from > to {
+        return None;
+    }
+
+    let limit = (to - from).max(1);
+
+    sqlx::query_as(
+        "
+        SELECT u.username, fr.created_at 
+        FROM friendships fr
+        WHERE fr.to_user_id = $1
+        JOIN users u
+        ON u.id = fr.from_user_id 
         SORT BY fr.created_at
         LIMIT $2 OFFSET $3
     ",

@@ -16,8 +16,8 @@ use crate::{
     jwt::Claims,
     sql_utils::calls::{
         delete_block, delete_friend_request, delete_friendship, get_private_block,
-        get_private_friend_request, get_private_friendship, get_private_user, get_public_blocks,
-        get_public_user, get_undirected_private_friend_requests, insert_block,
+        get_private_friendship, get_private_user, get_public_blocks, get_public_user,
+        get_undirected_private_friend_requests, insert_block,
     },
 };
 

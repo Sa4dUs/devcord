@@ -12,15 +12,18 @@ use crate::{
         responses,
         structs::{
             FriendRequestState, PublicFriendRequestReceived, PublicFriendRequestSent,
-            RequestFriendRequest, RequestFriendRequestRecieved, RequestFriendRequestSent,
+            PublicFriendship, RequestFriendRequest, RequestFriendRequestRecieved,
+            RequestFriendRequestSent, RequestFriendships,
         },
+        types::UserUsername,
     },
     app::AppState,
     jwt::Claims,
     sql_utils::calls::{
         get_private_block, get_private_friend_request, get_private_user,
-        get_public_friend_requests_received, get_public_friend_requests_sent, get_public_user,
-        insert_friend_request, insert_friendship, update_friend_request_state,
+        get_public_friend_requests_received, get_public_friend_requests_sent,
+        get_public_friendships, get_public_user, insert_friend_request, insert_friendship,
+        update_friend_request_state,
     },
 };
 
@@ -172,6 +175,20 @@ pub async fn get_request_recieved(
 
     let requests =
         get_public_friend_requests_received(&claims.user_id, query.from, query.to, &state.db).await;
+
+    E1(Json(requests))
+}
+
+pub async fn get_friends(
+    State(state): State<Arc<AppState>>,
+    claims: Claims,
+    Query(query): Query<RequestFriendships>,
+) -> Either<Json<Option<Vec<PublicFriendship>>>, impl IntoResponse> {
+    if get_public_user(&claims.user_id, &state.db).await.is_none() {
+        return E2(responses::USER_DOES_NOT_EXIST);
+    }
+
+    let requests = get_public_friendships(&claims.user_id, query.from, query.to, &state.db).await;
 
     E1(Json(requests))
 }

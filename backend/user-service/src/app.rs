@@ -6,7 +6,7 @@ use axum::{
     routing::{get, post},
     serve,
 };
-use fluvio::{FluvioConfig, TopicProducer, metadata::topic::TopicSpec, spu::SpuSocketPool};
+use fluvio::{Fluvio, FluvioConfig, TopicProducer, metadata::topic::TopicSpec, spu::SpuSocketPool};
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
@@ -20,8 +20,10 @@ use crate::{
     request::{
         block::{block_user, get_blocked, unblock_user},
         friendships::{
-            accept_friend, get_request_recieved, get_request_sent, reject_friend, request_friend,
+            accept_friend, get_friends, get_request_recieved, get_request_sent, reject_friend,
+            request_friend,
         },
+        user::{get_user_info, update_profile},
     },
     sql_utils::calls::insert_user,
 };
@@ -32,7 +34,7 @@ pub struct AppState {
     pub producer: TopicProducer<SpuSocketPool>,
 }
 
-pub async fn run() -> anyhow::Result<()> {
+pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::fmt::layer()
@@ -131,19 +133,36 @@ pub async fn run() -> anyhow::Result<()> {
         producer,
     });
 
-    let app = Router::new()
-        .route("/friend", post(request_friend))
+    let friendships_router = Router::new()
+        .route("/request", post(request_friend))
         .route("/accept", post(accept_friend))
         .route("/reject", post(reject_friend))
-        .route("/requestsent", get(get_request_sent))
-        .route("/requestrecieved", get(get_request_recieved))
+        .route("/sent", get(get_request_sent))
+        .route("/recieved", get(get_request_recieved))
+        .route("/friends", get(get_friends));
+
+    let block_router = Router::new()
         .route("/block", post(block_user).get(get_blocked))
-        .route("/unblock", post(unblock_user))
-        .route("/auth", get(authorize))
-        .route("/health", get(|| async { "Healthy " }))
+        .route("/unblock", post(unblock_user));
+
+    let app = Router::new()
+        .nest("/friendship", friendships_router)
+        .nest("/blocks", block_router)
+        .route("/update", post(update_profile))
+        .route("/", get(get_user_info))
+        .route(
+            "/health",
+            get(|| async { "Long life to the allmighty turbofish" }),
+        )
         .layer(cors_layer)
         .layer(trace_layer)
         .with_state(state);
+
+    Ok((app, fluvio, db))
+}
+
+pub async fn run() -> anyhow::Result<()> {
+    let (app, fluvio, db) = app().await?;
 
     let addr: SocketAddr = var("SOCKET_ADDR")
         .expect("SOCKET_ADDR env not set")

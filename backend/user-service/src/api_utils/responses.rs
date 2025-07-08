@@ -35,10 +35,10 @@ pub static DB_ERROR: ApiResponse<ApiResponseMessage> = (
     }),
 );
 
-pub static USER_UPDATED: ApiResponse<ApiResponseMessage> = (
+pub static PROFILE_UPDATED: ApiResponse<ApiResponseMessage> = (
     StatusCode::OK,
     Json(ApiResponseMessage {
-        message: "User updated",
+        message: "Profile updated",
     }),
 );
 
