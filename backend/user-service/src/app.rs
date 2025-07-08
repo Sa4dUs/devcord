@@ -108,25 +108,6 @@ pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
 
     let producer = fluvio.topic_producer(producer_topic).await?;
 
-    //ONLY FOR TESTING
-
-    let user_a = PrivateUser {
-        id: "a".to_owned(),
-        username: "a_username".to_owned(),
-        created_at: None,
-    };
-
-    let user_b = PrivateUser {
-        id: "b".to_owned(),
-        username: "b_username".to_owned(),
-        created_at: None,
-    };
-
-    insert_user(user_a, &db).await.ok();
-    insert_user(user_b, &db).await.ok();
-
-    //NO LONGER FOR TESTING
-
     let state = Arc::new(AppState {
         db: db.clone(),
         producer,
