@@ -1,5 +1,6 @@
 use axum::{Json, http::StatusCode};
 use serde::Serialize;
+
 #[derive(Serialize, Clone, Copy)]
 pub struct ApiResponseMessage {
     pub message: &'static str,
@@ -10,7 +11,7 @@ pub type ApiResponse<T> = (StatusCode, Json<T>);
 pub static USER_DOES_NOT_EXIST: ApiResponse<ApiResponseMessage> = (
     StatusCode::NOT_FOUND,
     Json(ApiResponseMessage {
-        message: "User does no exist",
+        message: "User does not exist",
     }),
 );
 
