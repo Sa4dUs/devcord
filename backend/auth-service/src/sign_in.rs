@@ -35,7 +35,6 @@ pub async fn sign_in_user(
             None => return (StatusCode::UNAUTHORIZED, "Invalid credentials").into_response(),
         };
 
-    // sigue el resto sin indentación adicional
     let login_time = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
