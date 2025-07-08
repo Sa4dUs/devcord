@@ -93,17 +93,39 @@ services:
 
   user-service:
     build:
-      context: ./backend/user-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: ./user-service/Dockerfile
     ports:
       - "3007:3000"
     environment:
+      - CORS_ORIGIN=http://localhost:3000
+      - DATABASE_URL=postgres://postgres:password@user-db:5432/psqldb
+      - SOCKET_ADDR=0.0.0.0:3000
+      - FLUVIO_ADDR=sc:9003
+      - PRODUCER_TOPIC=user
+      - CONSUMER_TOPIC=auth
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
       - CARGO_ENV
     networks:
       - backend
     depends_on:
       - sc
       - spu
+  
+  user-db:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: psqldb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
   sc:
     image: infinyon/fluvio:stable
     container_name: sc
@@ -153,6 +175,8 @@ services:
     networks:
       - backend
 
+volumes:
+  pgdata:
 
 networks:
   backend:
