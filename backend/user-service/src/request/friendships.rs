@@ -139,13 +139,6 @@ pub async fn reject_friend(
         return responses::DB_ERROR;
     }
 
-    if insert_friendship(&to_user.id, &claims.user_id, &state.db)
-        .await
-        .is_err()
-    {
-        return responses::DB_ERROR;
-    }
-
     responses::REQUEST_REJECTED
 }
 
