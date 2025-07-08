@@ -4,13 +4,15 @@ use crate::register::register_user;
 use crate::sign_in::sign_in_user;
 
 use anyhow::Result;
+use axum::http::{HeaderValue, Method, header};
 use axum::{Router, routing::post};
 use dotenvy::dotenv;
 use fluvio::Fluvio;
 use sqlx::postgres::PgPoolOptions;
+use std::env::var;
 use std::{env, time::Duration};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
-
 use tracing::info;
 
 pub async fn run() -> Result<()> {

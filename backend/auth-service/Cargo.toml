@@ -15,11 +15,11 @@ chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1"
 topic_structs = { path = "../topic_structs" }
 bincode = { version = "2.0.1", features = ["serde"] }
-tower-http = { version = "0.3", features = ["trace"] }
 tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
+tracing-subscriber = {version = "0.3.19", features = ["env-filter", "fmt"]}
 fluvio = "0.50.1"
 anyhow = "1.0.98"
 axum = "0.8.4"
 argon2 = "0.5.3"
 tokio = {version = "1.46.1", features = ["full"]}
+tower-http = {version = "0.6.6", features = ["cors", "trace"] }
