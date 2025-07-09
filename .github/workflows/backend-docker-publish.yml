@@ -4,6 +4,7 @@ on:
     push:
         branches:
             - main
+            - back/main
 
 jobs:
     back-publish:
@@ -11,7 +12,17 @@ jobs:
 
         strategy:
             matrix:
-                service: [api-gateway]
+                service:
+                    [
+                        api-gateway,
+                        auth-service,
+                        call-service,
+                        group-service,
+                        message-service,
+                        notification-service,
+                        presence-service,
+                        user-service,
+                    ]
 
         env:
             DOCKERHUB_USERNAME: ${{ secrets.DOCKER_USERNAME }}
