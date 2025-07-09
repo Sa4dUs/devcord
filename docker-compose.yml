@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   frontend:
     build:
@@ -13,7 +15,7 @@ services:
     environment:
       - NODE_ENV
       - CHOKIDAR_USEPOLLING=true
-  
+
   api-gateway:
     build:
       context: ./backend/api-gateway
@@ -27,15 +29,20 @@ services:
 
   auth-service:
     build:
-      context: ./backend/auth-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: ./auth-service/Dockerfile
     ports:
       - "3001:3000"
     environment:
       - CARGO_ENV
+      - AUTH_DATABASE_URL=postgres://postgres:password@auth-db:5432/psqldb
+      - JWT_SECRET="justalongenoughkeyforhs256algorithm"
+      - DB_MAX_CONNECTIONS= 5
+      - DB_POOL_TIMEOUT_SECS=3
+      - RUST_LOG=info
     networks:
       - backend
-  
+
   call-service:
     build:
       context: ./backend/call-service
@@ -46,7 +53,7 @@ services:
       - CARGO_ENV
     networks:
       - backend
-  
+
   group-service:
     build:
       context: ./backend/group-service
@@ -178,6 +185,23 @@ services:
 volumes:
   pgdata:
 
+  auth-db:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: psqldb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
 networks:
   backend:
     driver: bridge
+
+volumes:
+  pgdata:

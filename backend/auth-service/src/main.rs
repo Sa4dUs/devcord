@@ -1,11 +1,15 @@
-use axum::{Router, routing::get};
+use auth_service::app;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
-async fn main() {
-    // build our application with a single route
-    let app = Router::new().route("/", get(|| async { "Hello, World!" }));
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
 
-    // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    tracing::info!("Starting auth service...");
+
+    app::run().await?;
+
+    Ok(())
 }

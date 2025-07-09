@@ -4,5 +4,22 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-native-tls"] }
+dotenvy = "0.15"
+uuid = { version = "1", features = ["v4"] }
+rand_core = "0.6"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+jsonwebtoken = "9.3.1"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+topic_structs = { path = "../topic_structs" }
+bincode = { version = "2.0.1", features = ["serde"] }
+tracing = "0.1.41"
+tracing-subscriber = {version = "0.3.19", features = ["env-filter", "fmt"]}
+fluvio = "0.50.1"
+anyhow = "1.0.98"
 axum = "0.8.4"
-tokio = {version = "1.45.1", features=["full"]}
+argon2 = "0.5.3"
+tokio = {version = "1.46.1", features = ["full"]}
+tower-http = {version = "0.6.6", features = ["cors", "trace"] }
