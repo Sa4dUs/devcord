@@ -4,6 +4,7 @@ on:
     push:
         branches:
             - main
+            - back/main
 
 jobs:
     back-publish:
@@ -11,7 +12,17 @@ jobs:
 
         strategy:
             matrix:
-                service: [api-gateway, auth-service, call-service, group-service, message-service, notification-service, presence-service, user-service]
+                service:
+                    [
+                        api-gateway,
+                        auth-service,
+                        call-service,
+                        group-service,
+                        message-service,
+                        notification-service,
+                        presence-service,
+                        user-service,
+                    ]
 
         env:
             DOCKERHUB_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -27,7 +38,7 @@ jobs:
 
             - name: Build Docker image
               run: |
-                  docker build -t $DOCKERHUB_USERNAME/${{ matrix.service }}:latest backend/${{ matrix.service }}
+                  docker build -t $DOCKERHUB_USERNAME/${{ matrix.service }}:latest -f backend/${{ matrix.service }}/Dockerfile backend
 
             - name: Push Docker image
               run: |

@@ -24,9 +24,10 @@ services:
     environment:
       - CARGO_ENV
       - AUTH_DATABASE_URL=postgres://postgres:password@auth-db:5432/psqldb
+      - CORS_ORIGIN="localhost"
       - JWT_SECRET="justalongenoughkeyforhs256algorithm"
-      - DB_MAX_CONNECTIONS= 5
-      - DB_POOL_TIMEOUT_SECS=3
+      - DB_MAX_CONNECTIONS=5
+      - DB_POOL_TIMEOUT_SECS=10
       - RUST_LOG=info
     networks:
       - backend
