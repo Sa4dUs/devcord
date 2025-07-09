@@ -1,12 +1,8 @@
 use std::fs;
 
 use anyhow::Error;
+use dotenv::var;
 use serde::Deserialize;
-
-#[cfg(not(test))]
-const CONFIG_FILE: &str = "config/config.toml";
-#[cfg(test)]
-const CONFIG_FILE: &str = "config/config.example.toml";
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct Config {
@@ -31,7 +27,8 @@ pub(crate) struct Route {
 }
 
 pub fn load() -> Result<Config, Error> {
-    load_from_path(CONFIG_FILE)
+    let config_path = var("CONFIG_PATH").unwrap_or("config/config.toml".to_string());
+    load_from_path(&config_path)
 }
 
 pub fn load_from_path(path: &str) -> Result<Config, Error> {

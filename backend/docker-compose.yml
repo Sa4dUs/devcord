@@ -1,35 +1,23 @@
-version: "3.8"
-
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "4200:4200"
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/package.json:/app/package.json
-      - ./frontend/package-lock.json:/app/package-lock.json
-      - /app/node_modules
-    environment:
-      - NODE_ENV
-      - CHOKIDAR_USEPOLLING=true
-
   api-gateway:
     build:
-      context: ./backend/api-gateway
+      context: ./api-gateway
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    volumes:
+      - ./api-gateway/config:/app/config # Change this on deployment
     environment:
       - CARGO_ENV
+      - JWT_SECRET="justalongenoughkeyforhs256algorithm"
+      - CORS_ORIGIN="localhost"
+      - CONFIG_PATH="/app/config/config.toml"
     networks:
       - backend
 
   auth-service:
     build:
-      context: ./backend
+      context: ./
       dockerfile: ./auth-service/Dockerfile
     ports:
       - "3001:3000"
@@ -59,7 +47,7 @@ services:
 
   call-service:
     build:
-      context: ./backend/call-service
+      context: ./call-service
       dockerfile: Dockerfile
     ports:
       - "3002:3000"
@@ -70,7 +58,7 @@ services:
 
   group-service:
     build:
-      context: ./backend/group-service
+      context: ./group-service
       dockerfile: Dockerfile
     ports:
       - "3003:3000"
@@ -81,7 +69,7 @@ services:
 
   message-service:
     build:
-      context: ./backend/message-service
+      context: ./message-service
       dockerfile: Dockerfile
     ports:
       - "3004:3000"
@@ -92,7 +80,7 @@ services:
 
   notification-service:
     build:
-      context: ./backend/notification-service
+      context: ./notification-service
       dockerfile: Dockerfile
     ports:
       - "3005:3000"
@@ -103,7 +91,7 @@ services:
 
   presence-service:
     build:
-      context: ./backend/presence-service
+      context: ./presence-service
       dockerfile: Dockerfile
     ports:
       - "3006:3000"
@@ -114,7 +102,7 @@ services:
 
   user-service:
     build:
-      context: ./backend
+      context: ./
       dockerfile: ./user-service/Dockerfile
     ports:
       - "3007:3000"
@@ -157,13 +145,13 @@ services:
       - RUST_LOG=info
     command: "./fluvio-run sc --local /fluvio/metadata"
     volumes:
-      - ./backend/fluvio/fluvio-metadata:/fluvio/metadata
+      - ./fluvio/fluvio-metadata:/fluvio/metadata
     networks:
       - backend
 
   sc-setup:
     build:
-      context: ./backend/fluvio
+      context: ./fluvio
       dockerfile: Dockerfile
     container_name: sc-setup
     environment:
@@ -184,7 +172,7 @@ services:
     container_name: spu
     hostname: spu
     volumes:
-      - ./backend/fluvio/fluvio-data:/fluvio/data
+      - ./fluvio/fluvio-data:/fluvio/data
     environment:
       - RUST_LOG=info
     ports:
