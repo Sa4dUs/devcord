@@ -14,7 +14,6 @@ use tracing::Level;
 use tracing_subscriber::{Layer, filter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
-    api_utils::structs::PrivateUser,
     fluvio_consumer,
     request::{
         block::{block_user, get_blocked, unblock_user},
@@ -24,7 +23,7 @@ use crate::{
         },
         user::{get_user_info, update_profile},
     },
-    sql_utils::calls::insert_user,
+    sql_utils::init::init,
 };
 
 #[derive(Clone)]
@@ -63,7 +62,7 @@ pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
         )
         .await?;
 
-    sqlx::migrate!().run(&db).await?;
+    init(&db).await?;
 
     let mut fluvio_config =
         FluvioConfig::new(var("FLUVIO_ADDR").expect("FLUVIO_ADDR env not set").trim());
