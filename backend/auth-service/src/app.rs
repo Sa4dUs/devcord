@@ -1,3 +1,4 @@
+use crate::db::init::init;
 use crate::log_out::log_user_out;
 use crate::models::app_state::AppState;
 use crate::register::register_user;
@@ -51,7 +52,7 @@ pub async fn run() -> Result<()> {
         .connect(&database_url)
         .await?;
 
-    sqlx::migrate!().run(&pool).await?;
+    init(&pool).await?;
     info!("Database connected");
 
     let fluvio = Fluvio::connect().await?;
