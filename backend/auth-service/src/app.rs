@@ -8,7 +8,7 @@ use anyhow::Result;
 use axum::http::{HeaderValue, Method, header};
 use axum::{Router, routing::post};
 use dotenvy::dotenv;
-use fluvio::Fluvio;
+use fluvio::{Fluvio, FluvioConfig};
 use sqlx::postgres::PgPoolOptions;
 use std::env::var;
 use std::{env, time::Duration};
@@ -55,7 +55,12 @@ pub async fn run() -> Result<()> {
     init(&pool).await?;
     info!("Database connected");
 
-    let fluvio = Fluvio::connect().await?;
+    let mut fluvio_config =
+        FluvioConfig::new(var("FLUVIO_ADDR").expect("FLUVIO_ADDR env not set").trim());
+    fluvio_config.use_spu_local_address = true;
+
+    let fluvio = fluvio::Fluvio::connect_with_config(&fluvio_config).await?;
+
     let producer = fluvio.topic_producer("auth").await?;
     info!("Connected to Fluvio");
 
