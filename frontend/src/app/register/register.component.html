@@ -1,0 +1,27 @@
+<h2>Registro</h2>
+    <!--Todos los comentarios de esta cosa no son definitivos
+    Son para que no me lie yo mismo cuando haga más, cosas que se que harán bien al universo-->
+<form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+<!--Esta línea de arriba quiere decir que enlazas con registerForm y funciona cuando pulsas ese botón (que se llama así porque está
+en el documento)-->
+
+
+  <label for="username">Nombre de usuario:</label>
+  <!--Crear la variable y guardarla (debajo) en registerForm.controls.username-->
+  <input id="username" formControlName="username" />
+
+  <label for="email">Correo electrónico:</label>
+  <!--Lo mismo-->
+  <input id="email" type="email" formControlName="email" />
+
+  <label for="password">Contraseña:</label>
+  <!--Lo mismo-->
+  <input id="password" type="password" formControlName="password" />
+
+  <label for="telephone">Teléfono (opcional):</label>
+  <!--Lo mismo-->
+  <input id="telephone" formControlName="telephone" />
+
+  <button type="submit">Registrarse</button>
+
+</form>
