@@ -19,7 +19,7 @@ use crate::{
     request::{
         block::{block_user, get_blocked, unblock_user},
         friendships::{
-            accept_friend, get_friends, get_request_recieved, get_request_sent, reject_friend,
+            accept_friend, get_friends, get_request_received, get_request_sent, reject_friend,
             request_friend,
         },
         user::{get_user_info, update_profile},
@@ -118,7 +118,7 @@ pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
         .route("/accept", post(accept_friend))
         .route("/reject", post(reject_friend))
         .route("/sent", get(get_request_sent))
-        .route("/recieved", get(get_request_recieved))
+        .route("/received", get(get_request_received))
         .route("/friends", get(get_friends));
 
     let block_router = Router::new()

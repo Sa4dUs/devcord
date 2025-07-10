@@ -157,7 +157,7 @@ pub async fn get_request_sent(
     E1(Json(requests))
 }
 
-pub async fn get_request_recieved(
+pub async fn get_request_received(
     State(state): State<Arc<AppState>>,
     claims: Claims,
     Query(query): Query<RequestFriendRequestRecieved>,
