@@ -24,8 +24,17 @@ export class LogInComponent {
     if (this.logInForm.valid) {
       const { username, password } = this.logInForm.value;
       this.http.post('http://localhost:3001', { username, password }).subscribe({ //esta línea es la que enlaza con el backend
-        next: (data) => console.log('Login exitoso:', data),
-        error: (error) => console.warn('Calamidad ocurrida:', error),
+        next: (data) => {console.log('Login exitoso:', data)},
+        error: (error) =>{
+          switch(error.status){
+            case 401:
+              console.warn(' No sé quien eres ');
+              break;
+            case 500:
+              console.error('Error del servidor. Habla con el chamán del servidor')
+              break;
+          }
+          console.warn('Calamidad ocurrida:', error)},
       });
     } else {
       console.warn('Por la gloria del Imperio Mongol, rellena el formulario!');

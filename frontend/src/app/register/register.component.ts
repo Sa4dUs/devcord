@@ -31,9 +31,23 @@ export class RegisterComponent {
   onSubmit(): void {
     if (this.registerForm.valid) {
       const { username, email, password, telephone, prefix } = this.registerForm.value;
-      this.http.post('http://localhost:3001', { username, password }).subscribe({ //esta línea es la que enlaza con el backend
-        next: (data) => console.log('Registro exitoso:', data),
-        error: (error) => console.warn('Gran Calamidad ocurrida:', error),
+      this.http.post('http://localhost:3001/register', { username, email, password, telephone }).subscribe({
+        next: (data) => {
+          console.log('Registro exitoso:', data);
+        },
+        error: (error) => {
+          switch (error.status) {
+            case 409:
+              console.warn('¡ Suplantar identidades es delito penal !');
+              break;
+            case 500:
+              console.error('Error del servidor. Habla con el chamán del sistema.');
+              break;
+            default:
+              console.error('Error inesperado:', error);
+              break;
+          }
+        }
       });
       console.log('Datos del formulario:', this.registerForm.value);
     } else {
