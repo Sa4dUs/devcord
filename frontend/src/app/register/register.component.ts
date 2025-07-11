@@ -22,14 +22,15 @@ export class RegisterComponent {
       username: ['', Validators.required], // Campo obligatorio
       email: ['', [Validators.required, Validators.email]], 
       password: ['', Validators.required], 
-      telephone: [''] //opcional
+      telephone: [''], //opcional
+      prefix:['']//sobreentiendo opcional
     });
   }
 
   // Función que se lanza cuando pulsas el botón de "Registrarse"
   onSubmit(): void {
     if (this.registerForm.valid) {
-      const { username, email, password, telephone } = this.registerForm.value;
+      const { username, email, password, telephone, prefix } = this.registerForm.value;
       this.http.post('http://localhost:3001', { username, password }).subscribe({ //esta línea es la que enlaza con el backend
         next: (data) => console.log('Registro exitoso:', data),
         error: (error) => console.warn('Gran Calamidad ocurrida:', error),
