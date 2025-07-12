@@ -19,7 +19,7 @@ pub fn generate_jwt(user_id: String) -> Result<String, jsonwebtoken::errors::Err
 
     let claims = Claims {
         exp: expiration,
-        user_id: user_id,
+        user_id,
     };
 
     let secret = env::var("JWT_SECRET").expect("JWT_SECRET not defined in .env");

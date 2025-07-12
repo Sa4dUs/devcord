@@ -31,7 +31,7 @@ pub async fn update_profile(
 
     for (part, value) in body.query.iter() {
         let res = match part {
-            Username => update_user_username(&claims.user_id, &value, &state.db).await,
+            Username => update_user_username(&claims.user_id, value, &state.db).await,
         };
 
         match res {
