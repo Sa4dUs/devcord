@@ -3,8 +3,15 @@ use std::{
     task::{Context, Poll},
 };
 
-use axum::{extract::Request, response::Response};
+use axum::{
+    extract::Request,
+    response::{IntoResponse, Response},
+};
+use hyper::StatusCode;
+use rand::seq::IndexedRandom;
 use tower::{Layer, Service};
+
+use crate::error::ErrorResponse;
 
 #[derive(Clone)]
 pub struct LoadBalancerLayer;
@@ -41,11 +48,31 @@ where
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, req: Request) -> Self::Future {
-        // TODO(Sa4dUs): Add LoadBalancerMiddleware logic
+    fn call(&mut self, mut req: Request) -> Self::Future {
         let mut inner = self.inner.clone();
 
         Box::pin(async move {
+            let service = match req.extensions().get::<crate::config::Service>() {
+                Some(svc) => svc,
+                None => {
+                    return Ok(StatusCode::INTERNAL_SERVER_ERROR
+                        .with_debug("Could not get `Service` extension at load balancer middleware")
+                        .into_response());
+                }
+            };
+
+            // FIXME(Sa4dUs): Add strategy pattern for different load balancing strats
+            let instance = match service.instances.choose(&mut rand::rng()) {
+                Some(uri) => uri.clone(),
+                None => {
+                    return Ok(StatusCode::INTERNAL_SERVER_ERROR
+                        .with_debug("Could not get an instance following load balancer strategy")
+                        .into_response());
+                }
+            };
+
+            req.extensions_mut().insert(instance);
+
             let response = inner.call(req).await?;
             Ok(response)
         })
