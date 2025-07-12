@@ -15,20 +15,6 @@ pub static USER_DOES_NOT_EXIST: ApiResponse<ApiResponseMessage> = (
     }),
 );
 
-pub static ILLEGAL_QUERY: ApiResponse<ApiResponseMessage> = (
-    StatusCode::BAD_REQUEST,
-    Json(ApiResponseMessage {
-        message: "Illegal query",
-    }),
-);
-
-pub static FLUVIO_ERROR: ApiResponse<ApiResponseMessage> = (
-    StatusCode::INTERNAL_SERVER_ERROR,
-    Json(ApiResponseMessage {
-        message: "Failed to communicate with fluvio",
-    }),
-);
-
 pub static DB_ERROR: ApiResponse<ApiResponseMessage> = (
     StatusCode::INTERNAL_SERVER_ERROR,
     Json(ApiResponseMessage {

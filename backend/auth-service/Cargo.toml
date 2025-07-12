@@ -4,15 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-sqlx = { version = "0.7", features = ["postgres", "runtime-tokio"] }
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio"] }
 dotenvy = "0.15"
-uuid = { version = "1", features = ["v4"] }
-rand_core = "0.6"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 jsonwebtoken = "9.3.1"
 chrono = { version = "0.4", features = ["serde"] }
-thiserror = "1"
+thiserror = "2.0.12"
 topic_structs = { path = "../topic_structs" }
 bincode = { version = "2.0.1", features = ["serde"] }
 tracing = "0.1.41"
@@ -23,3 +21,4 @@ axum = "0.8.4"
 argon2 = "0.5.3"
 tokio = {version = "1.46.1", features = ["full"]}
 tower-http = {version = "0.6.6", features = ["cors", "trace"] }
+uuid = {version = "1.17.0", features = ["v4"]}

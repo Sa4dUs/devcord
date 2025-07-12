@@ -15,7 +15,6 @@ use crate::{
             PublicFriendship, RequestFriendRequest, RequestFriendRequestRecieved,
             RequestFriendRequestSent, RequestFriendships,
         },
-        types::UserUsername,
     },
     app::AppState,
     jwt::Claims,

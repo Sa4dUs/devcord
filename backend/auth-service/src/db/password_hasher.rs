@@ -1,8 +1,7 @@
 use argon2::{
     Argon2,
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
-use rand_core::OsRng;
 
 pub async fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
     //Salt is the way the random part is done

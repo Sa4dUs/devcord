@@ -8,7 +8,7 @@ use anyhow::Result;
 use axum::http::{HeaderValue, Method, header};
 use axum::{Router, routing::post};
 use dotenvy::dotenv;
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::FluvioConfig;
 use sqlx::postgres::PgPoolOptions;
 use std::env::var;
 use std::{env, time::Duration};

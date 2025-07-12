@@ -50,13 +50,13 @@ pub async fn register_user(
         Err(UserInsertError::Database(_)) => return INTERNAL_SERVER_ERROR.into_response(),
     };
 
-    let token = match generate_jwt(user_info.id.clone()) {
+    let token = match generate_jwt(user_info.id.to_string()) {
         Ok(t) => t,
         Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
     };
 
     let event = UserCreated {
-        id: user_info.id.clone(),
+        id: user_info.id.to_string(),
         username: user_info.username.clone(),
     };
 
@@ -76,7 +76,7 @@ pub async fn register_user(
 
     let response = RegisterResponse {
         token,
-        user_id: user_info.id,
+        user_id: user_info.id.to_string(),
         username: user_info.username,
     };
 
