@@ -29,7 +29,11 @@ pub async fn run() -> Result<()> {
         .allow_origin(origins)
         .allow_credentials(true)
         .allow_methods([Method::GET, Method::POST])
-        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]);
+        .allow_headers([
+            header::CONTENT_TYPE,
+            header::AUTHORIZATION,
+            header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        ]);
 
     let trace_layer = TraceLayer::new_for_http();
 

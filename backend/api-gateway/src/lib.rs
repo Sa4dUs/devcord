@@ -37,7 +37,11 @@ pub fn app(config: Config) -> Router {
         .allow_origin(origins)
         .allow_credentials(true)
         .allow_methods([Method::GET, Method::POST])
-        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]);
+        .allow_headers([
+            header::CONTENT_TYPE,
+            header::AUTHORIZATION,
+            header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        ]);
 
     Router::new()
         .route("/{*path}", any(handler::handler))
