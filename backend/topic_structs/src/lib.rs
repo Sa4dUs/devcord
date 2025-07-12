@@ -24,3 +24,13 @@ pub struct UserLoggedOut {
     pub logout_time: i64,
 }
 
+#[derive(Encode, Decode, Debug, Clone, Default)]
+pub struct FriendRequestCreated {
+    pub from_username: String,
+}
+
+#[derive(Encode, Decode, Debug, Clone, Default)]
+pub struct FriendRequestAnswered {
+    pub from_username: String,
+    pub accepted: bool,
+}
