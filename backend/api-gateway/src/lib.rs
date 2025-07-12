@@ -5,7 +5,7 @@ use axum::{
 };
 use dotenv::var;
 use hyper::header;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -38,7 +38,7 @@ pub fn app(config: Config) -> Router {
     let cors_layer = CorsLayer::new()
         .allow_origin(origins)
         .allow_credentials(true)
-        .allow_methods([Method::GET, Method::POST])
+        .allow_methods(Any)
         .allow_headers([
             header::CONTENT_TYPE,
             header::AUTHORIZATION,
