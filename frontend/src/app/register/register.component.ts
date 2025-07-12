@@ -21,8 +21,7 @@ export class RegisterComponent {
       username: ['', Validators.required], // Campo obligatorio
       email: ['', [Validators.required, Validators.email]], 
       password: ['', Validators.required], 
-      telephone: [''], //opcional
-      prefix:['']//sobreentiendo opcional
+      telephone: [''] //opcional
     });
   }
 
