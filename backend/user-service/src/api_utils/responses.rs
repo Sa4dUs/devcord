@@ -8,6 +8,13 @@ pub struct ApiResponseMessage {
 
 pub type ApiResponse<T> = (StatusCode, Json<T>);
 
+pub static FLUVIO_ERROR: ApiResponse<ApiResponseMessage> = (
+    StatusCode::INTERNAL_SERVER_ERROR,
+    Json(ApiResponseMessage {
+        message: "Fluvio error",
+    }),
+);
+
 pub static USER_DOES_NOT_EXIST: ApiResponse<ApiResponseMessage> = (
     StatusCode::NOT_FOUND,
     Json(ApiResponseMessage {

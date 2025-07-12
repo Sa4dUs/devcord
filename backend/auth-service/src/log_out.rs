@@ -2,8 +2,8 @@ use crate::api_utils::responses::INTERNAL_SERVER_ERROR;
 use crate::models::app_state::AppState;
 use axum::extract::State;
 use axum::{Json, response::IntoResponse};
-use bincode::{config::standard, encode_to_vec};
 use chrono::Utc;
+use serde_json::to_vec;
 use topic_structs::UserLoggedOut;
 use tracing::error;
 
@@ -15,9 +15,8 @@ pub async fn log_user_out(State(state): State<AppState>, user_id: String) -> imp
         logout_time,
     };
 
-    let event_bytes = match encode_to_vec(event, standard()) {
-        Ok(bytes) => bytes,
-        Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
+    let Ok(event_bytes) = to_vec(&event) else {
+        return INTERNAL_SERVER_ERROR.into_response();
     };
 
     if let Err(e) = state.producer.send(&*user_id, event_bytes).await {

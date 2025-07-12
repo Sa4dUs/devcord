@@ -201,8 +201,8 @@ pub async fn get_private_friend_request(
             WHERE from_user_id = $1 AND to_user_id = $2
         ",
     )
-    .bind(&from_user_id)
-    .bind(&to_user_id)
+    .bind(from_user_id)
+    .bind(to_user_id)
     .fetch_one(db)
     .await
     .ok()
@@ -220,8 +220,8 @@ pub async fn get_undirected_private_friend_requests(
             WHERE (from_user_id = $1 AND to_user_id = $2) OR (from_user_id = $2 AND to_user_id = $1)
         ",
     )
-    .bind(&from_user_id)
-    .bind(&to_user_id)
+    .bind(from_user_id)
+    .bind(to_user_id)
     .fetch_all(db)
     .await
     .ok()
@@ -271,8 +271,8 @@ pub async fn insert_friendship(
         VALUES ($1, $2), ($2, $1)
     ",
     )
-    .bind(&a_user_id)
-    .bind(&b_user_id)
+    .bind(a_user_id)
+    .bind(b_user_id)
     .execute(db)
     .await?;
 
