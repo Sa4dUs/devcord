@@ -12,12 +12,14 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use crate::{
     config::Config,
     middleware::{
-        auth::AuthLayer, parser::ParserLayer, rate_limit::RateLimitLayer, router::RouterLayer,
+        auth::AuthLayer, load_balancer::LoadBalancerLayer, parser::ParserLayer,
+        rate_limit::RateLimitLayer, router::RouterLayer,
     },
     state::AppState,
 };
 
 pub mod config;
+pub(crate) mod error;
 pub(crate) mod handler;
 pub(crate) mod jwt;
 pub(crate) mod middleware;
@@ -53,6 +55,7 @@ pub fn app(config: Config) -> Router {
         .layer(RouterLayer {
             state: state.clone(),
         })
+        .layer(LoadBalancerLayer)
         .layer(ParserLayer)
         .layer(cors_layer)
         .with_state(state)
