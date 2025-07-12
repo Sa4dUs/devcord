@@ -69,7 +69,10 @@ pub async fn run() -> anyhow::Result<()> {
     let config = config::load()?;
     let app = app(config);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    let port: String = dotenv::var("PORT").unwrap_or("3000".to_owned());
+    let addr = format!("0.0.0.0:{port}");
+    tracing::info!("API Gateway listening on port {addr}");
+    let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
 
     Ok(())

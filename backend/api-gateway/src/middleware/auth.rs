@@ -11,7 +11,7 @@ use hyper::{StatusCode, header::AUTHORIZATION};
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use tower::{Layer, Service};
 
-use crate::{jwt::Claims, middleware::parser::ParsedURI, state::AppState};
+use crate::{error::ErrorResponse, jwt::Claims, middleware::parser::ParsedURI, state::AppState};
 
 // NOTE(Sa4dUs): Maybe this can be a tuple struct?
 #[derive(Clone)]
@@ -56,7 +56,11 @@ where
         Box::pin(async move {
             let ParsedURI { prefix, subpath } = match req.extensions().get::<ParsedURI>() {
                 Some(uri) => uri,
-                None => return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+                None => {
+                    return Ok(StatusCode::INTERNAL_SERVER_ERROR
+                        .with_debug("Could not get `ParsedURI` extension at auth middleware")
+                        .into_response());
+                }
             };
 
             // FIXME(Sa4dUs): Make this decent once `config.path` is a HashMap
@@ -82,14 +86,20 @@ where
             // Check `Authorization: Bearer {TOKEN}`
             let token = match req.headers().get(&AUTHORIZATION) {
                 Some(val) => val.to_str().unwrap(), // FIXME(Sa4dUs): Handle this error properly
-                None => return Ok(StatusCode::UNAUTHORIZED.into_response()),
+                None => {
+                    return Ok(StatusCode::UNAUTHORIZED
+                        .with_debug("Authorization header must be providen for protected routes")
+                        .into_response());
+                }
             };
 
             // FIXME(Sa4dUs): This is prob not the right way to do this
             let token = if let Some(stripped) = token.strip_prefix("Bearer ") {
                 stripped
             } else {
-                return Ok(StatusCode::UNAUTHORIZED.into_response());
+                return Ok(StatusCode::UNAUTHORIZED
+                    .with_debug("Invalid Authorization header. Incorrect format")
+                    .into_response());
             };
 
             tracing::debug!("{token:?}");
@@ -102,7 +112,9 @@ where
             )
             .is_err()
             {
-                return Ok(StatusCode::UNAUTHORIZED.into_response());
+                return Ok(StatusCode::UNAUTHORIZED
+                    .with_debug("Invalid Authorization header. Could not decode into claim")
+                    .into_response());
             };
 
             // Valid JWT token, pass
