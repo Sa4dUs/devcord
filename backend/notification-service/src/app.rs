@@ -1,15 +1,16 @@
 use std::{env::var, net::SocketAddr, sync::Arc};
 
-use axum::{Json, Router, response::IntoResponse, routing::get, serve};
+use axum::{Router, extract::ws::Message, routing::get, serve};
 use dashmap::DashMap;
 use tokio::{
     net::TcpListener,
-    sync::{Mutex, mpsc::Sender},
+    sync::mpsc::{Receiver, Sender},
 };
 
-use crate::connection::notifications;
+use crate::connection::notification_handler;
 
-type ResponseSender = Sender<Arc<dyn IntoResponse + Send + Sync>>;
+pub type ResponseSender = Sender<Message>;
+pub type ResponseReceiver = Receiver<Message>;
 
 #[derive(Clone, Default)]
 pub struct AppState {
@@ -20,7 +21,7 @@ pub async fn app() -> anyhow::Result<Router> {
     let state = Arc::new(AppState::default());
 
     let router: Router = Router::new()
-        .route("/", get(notifications))
+        .route("/", get(notification_handler))
         .route("/health", get(|| async { "Healthy :D" }))
         .with_state(state);
 
