@@ -1,13 +1,12 @@
 import { Component } from "@angular/core";
-import { RouterOutlet } from "@angular/router";
-import { RegisterComponent } from "./register/register.component";
-import { LogInComponent } from "./logIn/logIn.component";
+import { RouterModule } from "@angular/router";
 
 @Component({
   selector: "app-root",
-  imports: [RouterOutlet, RegisterComponent,LogInComponent],
+  standalone: true,
+  imports: [RouterModule],
   templateUrl: "./app.html",
-  styleUrl: "./app.scss",
+  styleUrls: ["./app.scss"],
 })
 export class App {
   protected title = "frontend";

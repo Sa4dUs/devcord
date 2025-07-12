@@ -2,10 +2,9 @@ import { Component } from '@angular/core';
 import {  FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ReactiveFormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 
 
-// Decorador mágico que le dice a Angular: "Ey, esto es un componente"
-//Stalone seguirá siendo un misterio 
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -16,7 +15,7 @@ import { HttpClient } from '@angular/common/http';
 export class RegisterComponent {
   registerForm: FormGroup; // Aquí guardamos el formulario y sus movidas
 
-  constructor(private fb: FormBuilder, private http: HttpClient) {
+  constructor(private fb: FormBuilder, private http: HttpClient, private router: Router) {
     // Creamos el formulario:
     this.registerForm = this.fb.group({
       username: ['', Validators.required], // Campo obligatorio
@@ -29,29 +28,39 @@ export class RegisterComponent {
 
   // Función que se lanza cuando pulsas el botón de "Registrarse"
   onSubmit(): void {
-    if (this.registerForm.valid) {
-      const { username, email, password, telephone, prefix } = this.registerForm.value;
-      this.http.post('http://localhost:3001/register', { username, email, password, telephone }).subscribe({
-        next: (data) => {
-          console.log('Registro exitoso:', data);
-        },
-        error: (error) => {
-          switch (error.status) {
-            case 409:
-              console.warn('¡ Suplantar identidades es delito penal !');
-              break;
-            case 500:
-              console.error('Error del servidor. Habla con el chamán del sistema.');
-              break;
-            default:
-              console.error('Error inesperado:', error);
-              break;
-          }
+  if (this.registerForm.valid) {
+    const { username, email, password, telephone } = this.registerForm.value;
+
+    this.http.post<any>('http://lamoara.duckdns.org:6969/auth/register', {username,email,password,telephone}).subscribe({
+      next: (data) => {
+        // Hasta ahora no guardaba jeje. La sintaxis me la creo...la verdad
+        localStorage.setItem('user', JSON.stringify({ username, email,password, telephone }));
+
+        if (data.token) {
+          localStorage.setItem('token', data.token);
         }
-      });
-      console.log('Datos del formulario:', this.registerForm.value);
-    } else {
-      console.warn('Por la gloria del Imperio Mongol, rellena el formulario!');
-    }
+
+        console.log('Registro exitoso:', data);
+        this.router.navigate(['/user']); //redirección al perfil, pudiera cambiarse pero por ahora se queda
+      },
+      error: (error) => {
+        switch (error.status) {
+          case 409:
+            console.warn('Nombre de usuario o email ya están en uso.');
+            break;
+          case 500:
+            console.error('Error interno del servidor. Llama al chamán del servidor.');
+            break;
+          default:
+            console.error('Error desconocido:', error);
+        }
+      }
+    });
+
+    console.log('Datos enviados:', this.registerForm.value);
+  } else {
+    console.warn('Por la gloria del Imperio Mongol, rellena bien el formulario.');
   }
+}
+
 }

@@ -23,7 +23,7 @@ export class LogInComponent {
   onSubmitLogIn(): void {
     if (this.logInForm.valid) {
       const { username, password } = this.logInForm.value;
-      this.http.post('http://localhost:3001', { username, password }).subscribe({ //esta línea es la que enlaza con el backend
+      this.http.post('http://lamoara.duckdns.org:6969/auth/login', { username, password }).subscribe({ //esta línea es la que enlaza con el backend
         next: (data) => {console.log('Login exitoso:', data)},
         error: (error) =>{
           switch(error.status){
