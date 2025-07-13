@@ -9,6 +9,7 @@ use axum::http::{HeaderValue, Method, header};
 use axum::{Router, routing::post};
 use dotenvy::dotenv;
 use fluvio::FluvioConfig;
+use fluvio::metadata::topic::TopicSpec;
 use sqlx::postgres::PgPoolOptions;
 use std::env::var;
 use std::{env, time::Duration};
@@ -37,12 +38,12 @@ pub async fn run() -> Result<()> {
         .map_err(|_| anyhow::anyhow!("AUTH_DATABASE_URL must be set in .env"))?;
 
     let max_conns: u32 = env::var("DB_MAX_CONNECTIONS")
-        .expect("DB_MAX_CONNECTIONS must be set")
+        .unwrap_or("1".to_owned())
         .parse()
         .expect("DB_MAX_CONNECTIONS must be a number");
 
     let db_timeout: u64 = env::var("DB_POOL_TIMEOUT_SECS")
-        .expect("DB_POOL_TIMEOUT_SECS must be set")
+        .unwrap_or("10".to_owned())
         .parse()
         .expect("DB_POOL_TIMEOUT_SECS must be a number");
 
@@ -61,15 +62,65 @@ pub async fn run() -> Result<()> {
 
     let fluvio = fluvio::Fluvio::connect_with_config(&fluvio_config).await?;
 
-    let producer = fluvio.topic_producer("auth").await?;
+    let register_topic = var("AUTH_REGISTER_TOPIC")
+        .unwrap_or("auth_register".to_owned())
+        .trim()
+        .to_string();
+    let login_topic = var("AUTH_LOGIN_TOPIC")
+        .unwrap_or("auth_login".to_owned())
+        .trim()
+        .to_string();
+    let logout_topic = var("AUTH_LOGOUT_TOPIC")
+        .unwrap_or("auth_logout".to_owned())
+        .trim()
+        .to_string();
+
+    let admin = fluvio.admin().await;
+
+    let topics = admin
+        .all::<TopicSpec>()
+        .await
+        .expect("Failed to list topics");
+    let topic_names = topics
+        .iter()
+        .map(|topic| topic.name.clone())
+        .collect::<Vec<String>>();
+
+    if !topic_names.contains(&register_topic) {
+        let topic_spec = TopicSpec::new_computed(1, 1, None);
+        admin
+            .create(register_topic.clone(), false, topic_spec)
+            .await?;
+    }
+
+    if !topic_names.contains(&login_topic) {
+        let topic_spec = TopicSpec::new_computed(1, 1, None);
+        admin.create(login_topic.clone(), false, topic_spec).await?;
+    }
+
+    if !topic_names.contains(&logout_topic) {
+        let topic_spec = TopicSpec::new_computed(1, 1, None);
+        admin
+            .create(logout_topic.clone(), false, topic_spec)
+            .await?;
+    }
+
+    let register_producer = fluvio.topic_producer(register_topic).await?;
+    let login_producer = fluvio.topic_producer(login_topic).await?;
+    let logout_producer = fluvio.topic_producer(logout_topic).await?;
     info!("Connected to Fluvio");
 
-    let state = AppState { db: pool, producer };
+    let state = AppState {
+        db: pool,
+        register_producer,
+        login_producer,
+        logout_producer,
+    };
 
     let app = Router::new()
         .route("/register", post(register_user))
-        .route("/sign_in", post(sign_in_user))
-        .route("/log_out", post(log_user_out))
+        .route("/login", post(sign_in_user))
+        .route("/logout", post(log_user_out))
         .layer(cors_layer)
         .layer(trace_layer)
         .with_state(state);

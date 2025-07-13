@@ -65,7 +65,7 @@ pub async fn register_user(
     };
 
     if let Err(e) = state
-        .producer
+        .register_producer
         .send(&*user_info.id.to_string(), event_bytes)
         .await
     {
