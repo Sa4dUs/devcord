@@ -1,0 +1,12 @@
+.bubble {
+  width: 100px;
+  height: 100px;
+  background: lightblue;
+  border-radius: 50%;
+  cursor: move;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute; /* <--- esto es importante */
+  user-select: none;
+}
