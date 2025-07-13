@@ -1,4 +1,4 @@
-use std::{env::var, net::SocketAddr, sync::Arc};
+use std::{env::var, net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{
     Router,
@@ -59,7 +59,19 @@ pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
 
     let trace_layer = TraceLayer::new_for_http();
 
+    let max_conns: u32 = var("DB_MAX_CONNECTIONS")
+        .unwrap_or("1".to_owned())
+        .parse()
+        .expect("DB_MAX_CONNECTIONS must be a number");
+
+    let db_timeout: u64 = var("DB_POOL_TIMEOUT_SECS")
+        .unwrap_or("10".to_owned())
+        .parse()
+        .expect("DB_POOL_TIMEOUT_SECS must be a number");
+
     let db = PgPoolOptions::new()
+        .max_connections(max_conns)
+        .acquire_timeout(Duration::from_secs(db_timeout))
         .connect(
             var("DATABASE_URL")
                 .expect("DATABASE_URL env not set")
@@ -75,18 +87,18 @@ pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
 
     let fluvio = fluvio::Fluvio::connect_with_config(&fluvio_config).await?;
 
-    let auth_registered_consumer_topic = var("AUTH_REGISTERED_CONSUMER_TOPIC")
-        .unwrap_or("auth_registered".to_owned())
+    let auth_registered_consumer_topic = var("AUTH_REGISTER_TOPIC")
+        .unwrap_or("auth_register".to_owned())
         .trim()
         .to_string();
 
-    let request_producer_topic = var("RESQUEST_CONSUMER_TOPIC")
-        .unwrap_or("friendships_requested".to_owned())
+    let request_producer_topic = var("USER_RESQUEST_TOPIC")
+        .unwrap_or("friendships_request".to_owned())
         .trim()
         .to_string();
 
-    let answered_producer_topic = var("ANSWERED_CONSUMER_TOPIC")
-        .unwrap_or("friendships_answered".to_owned())
+    let answered_producer_topic = var("USER_ANSWER_TOPIC")
+        .unwrap_or("friendships_answer".to_owned())
         .trim()
         .to_string();
 

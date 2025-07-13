@@ -51,7 +51,7 @@ pub async fn sign_in_user(
         return INTERNAL_SERVER_ERROR.into_response();
     };
 
-    if let Err(e) = state.producer.send(fluvio::RecordKey::NULL, payload).await {
+    if let Err(e) = state.login_producer.send(event.id, payload).await {
         error!("The event logging couldn't be sent through Fluvio: {:?}", e);
     }
 
