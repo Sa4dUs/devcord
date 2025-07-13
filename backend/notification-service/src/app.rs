@@ -1,6 +1,11 @@
 use std::{env::var, net::SocketAddr, sync::Arc};
 
-use axum::{Router, extract::ws::Message, routing::get, serve};
+use axum::{
+    Router,
+    extract::ws::{Message, Utf8Bytes},
+    routing::get,
+    serve,
+};
 use dashmap::DashMap;
 use tokio::{
     net::TcpListener,
