@@ -6,6 +6,8 @@ use axum::{
     response::IntoResponse,
 };
 use axum_extra::either::Either::{self, E1, E2};
+use serde_json::to_vec;
+use topic_structs::{FriendRequestAnswered, FriendRequestCreated};
 
 use crate::{
     api_utils::{
@@ -31,9 +33,9 @@ pub async fn request_friend(
     claims: Claims,
     Json(body): Json<RequestFriendRequest>,
 ) -> impl IntoResponse {
-    if get_public_user(&claims.user_id, &state.db).await.is_none() {
+    let Some(from_user) = get_public_user(&claims.user_id, &state.db).await else {
         return responses::USER_DOES_NOT_EXIST;
-    }
+    };
 
     let to_user = match get_private_user(&body.to_user_username, &state.db).await {
         Some(e) => e,
@@ -61,6 +63,23 @@ pub async fn request_friend(
         return responses::DB_ERROR;
     }
 
+    let request = FriendRequestCreated {
+        from_username: from_user.username,
+    };
+
+    let Ok(request_bytes) = to_vec(&request) else {
+        return responses::FLUVIO_ERROR;
+    };
+
+    if state
+        .request_sent_producer
+        .send(to_user.id, request_bytes)
+        .await
+        .is_err()
+    {
+        return responses::FLUVIO_ERROR;
+    }
+
     responses::REQUEST_CREATED
 }
 
@@ -69,9 +88,9 @@ pub async fn accept_friend(
     claims: Claims,
     Json(body): Json<RequestFriendRequest>,
 ) -> impl IntoResponse {
-    if get_public_user(&claims.user_id, &state.db).await.is_none() {
+    let Some(_to_user) = get_public_user(&claims.user_id, &state.db).await else {
         return responses::USER_DOES_NOT_EXIST;
-    }
+    };
 
     let from_user = match get_private_user(&body.to_user_username, &state.db).await {
         Some(e) => e,
@@ -103,6 +122,24 @@ pub async fn accept_friend(
         return responses::DB_ERROR;
     }
 
+    let request = FriendRequestAnswered {
+        from_username: from_user.username,
+        accepted: true,
+    };
+
+    let Ok(request_bytes) = to_vec(&request) else {
+        return responses::FLUVIO_ERROR;
+    };
+
+    if state
+        .request_answered_producer
+        .send(from_user.id, request_bytes)
+        .await
+        .is_err()
+    {
+        return responses::FLUVIO_ERROR;
+    }
+
     responses::REQUEST_ACCEPTED
 }
 
@@ -111,17 +148,17 @@ pub async fn reject_friend(
     claims: Claims,
     Json(body): Json<RequestFriendRequest>,
 ) -> impl IntoResponse {
-    if get_public_user(&claims.user_id, &state.db).await.is_none() {
+    let Some(_to_user) = get_public_user(&claims.user_id, &state.db).await else {
         return responses::USER_DOES_NOT_EXIST;
-    }
+    };
 
-    let to_user = match get_private_user(&body.to_user_username, &state.db).await {
+    let from_user = match get_private_user(&body.to_user_username, &state.db).await {
         Some(e) => e,
         None => return responses::USER_DOES_NOT_EXIST,
     };
 
     let mut request =
-        match get_private_friend_request(&to_user.id, &claims.user_id, &state.db).await {
+        match get_private_friend_request(&from_user.id, &claims.user_id, &state.db).await {
             Some(e) => e,
             None => return responses::REQUEST_DOES_NOT_EXIST,
         };
@@ -136,6 +173,24 @@ pub async fn reject_friend(
         .is_err()
     {
         return responses::DB_ERROR;
+    }
+
+    let request = FriendRequestAnswered {
+        from_username: from_user.username,
+        accepted: false,
+    };
+
+    let Ok(request_bytes) = to_vec(&request) else {
+        return responses::FLUVIO_ERROR;
+    };
+
+    if state
+        .request_answered_producer
+        .send(from_user.id, request_bytes)
+        .await
+        .is_err()
+    {
+        return responses::FLUVIO_ERROR;
     }
 
     responses::REQUEST_REJECTED

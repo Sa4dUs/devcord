@@ -3,7 +3,9 @@ use fluvio::{TopicProducer, spu::SpuSocketPool};
 #[derive(Clone)]
 pub struct AppState {
     pub db: sqlx::PgPool,
-    pub producer: TopicProducerMono,
+    pub register_producer: TopicProducerMono,
+    pub login_producer: TopicProducerMono,
+    pub logout_producer: TopicProducerMono,
 }
 
 // `TopicProducer<S>` requires a generic parameter `S`

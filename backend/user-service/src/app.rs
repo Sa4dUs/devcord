@@ -1,4 +1,4 @@
-use std::{env::var, net::SocketAddr, sync::Arc};
+use std::{env::var, net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{
     Router,
@@ -29,7 +29,8 @@ use crate::{
 #[derive(Clone)]
 pub struct AppState {
     pub db: sqlx::PgPool,
-    pub producer: TopicProducer<SpuSocketPool>,
+    pub request_sent_producer: TopicProducer<SpuSocketPool>,
+    pub request_answered_producer: TopicProducer<SpuSocketPool>,
 }
 
 pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
@@ -58,7 +59,19 @@ pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
 
     let trace_layer = TraceLayer::new_for_http();
 
+    let max_conns: u32 = var("DB_MAX_CONNECTIONS")
+        .unwrap_or("1".to_owned())
+        .parse()
+        .expect("DB_MAX_CONNECTIONS must be a number");
+
+    let db_timeout: u64 = var("DB_POOL_TIMEOUT_SECS")
+        .unwrap_or("10".to_owned())
+        .parse()
+        .expect("DB_POOL_TIMEOUT_SECS must be a number");
+
     let db = PgPoolOptions::new()
+        .max_connections(max_conns)
+        .acquire_timeout(Duration::from_secs(db_timeout))
         .connect(
             var("DATABASE_URL")
                 .expect("DATABASE_URL env not set")
@@ -74,13 +87,18 @@ pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
 
     let fluvio = fluvio::Fluvio::connect_with_config(&fluvio_config).await?;
 
-    let producer_topic = var("PRODUCER_TOPIC")
-        .expect("PRODUCER_TOPIC env not set")
+    let auth_registered_consumer_topic = var("AUTH_REGISTER_TOPIC")
+        .unwrap_or("auth-register".to_owned())
         .trim()
         .to_string();
 
-    let consumer_topic = var("CONSUMER_TOPIC")
-        .expect("CONSUMER_TOPIC env not set")
+    let request_producer_topic = var("USER_RESQUEST_TOPIC")
+        .unwrap_or("friendships-request".to_owned())
+        .trim()
+        .to_string();
+
+    let answered_producer_topic = var("USER_ANSWER_TOPIC")
+        .unwrap_or("friendships-answer".to_owned())
         .trim()
         .to_string();
 
@@ -95,25 +113,37 @@ pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
         .map(|topic| topic.name.clone())
         .collect::<Vec<String>>();
 
-    if !topic_names.contains(&producer_topic) {
+    //Creates topic if they dont exist
+
+    if !topic_names.contains(&request_producer_topic) {
         let topic_spec = TopicSpec::new_computed(1, 1, None);
         admin
-            .create(producer_topic.clone(), false, topic_spec)
+            .create(request_producer_topic.clone(), false, topic_spec)
             .await?;
     }
 
-    if !topic_names.contains(&consumer_topic) {
+    if !topic_names.contains(&answered_producer_topic) {
         let topic_spec = TopicSpec::new_computed(1, 1, None);
         admin
-            .create(consumer_topic.clone(), false, topic_spec)
+            .create(answered_producer_topic.clone(), false, topic_spec)
             .await?;
     }
 
-    let producer = fluvio.topic_producer(producer_topic).await?;
+    if !topic_names.contains(&auth_registered_consumer_topic) {
+        let topic_spec = TopicSpec::new_computed(1, 1, None);
+        admin
+            .create(auth_registered_consumer_topic.clone(), false, topic_spec)
+            .await?;
+    }
+
+    let request_producer = fluvio.topic_producer(request_producer_topic).await?;
+
+    let answered_producer = fluvio.topic_producer(answered_producer_topic).await?;
 
     let state = Arc::new(AppState {
         db: db.clone(),
-        producer,
+        request_sent_producer: request_producer,
+        request_answered_producer: answered_producer,
     });
 
     let friendships_router = Router::new()

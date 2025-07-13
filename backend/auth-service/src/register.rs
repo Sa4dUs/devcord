@@ -7,8 +7,8 @@ use crate::models::app_state::AppState;
 
 use axum::extract::State;
 use axum::{Json, response::IntoResponse};
-use bincode::{config::standard, encode_to_vec};
 use serde::{Deserialize, Serialize};
+use serde_json::to_vec;
 use topic_structs::UserCreated;
 use tracing::error;
 
@@ -60,13 +60,12 @@ pub async fn register_user(
         username: user_info.username.clone(),
     };
 
-    let event_bytes = match encode_to_vec(event, standard()) {
-        Ok(bytes) => bytes,
-        Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
+    let Ok(event_bytes) = to_vec(&event) else {
+        return INTERNAL_SERVER_ERROR.into_response();
     };
 
     if let Err(e) = state
-        .producer
+        .register_producer
         .send(&*user_info.id.to_string(), event_bytes)
         .await
     {

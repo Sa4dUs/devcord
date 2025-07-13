@@ -1,7 +1,7 @@
 use axum::extract::State;
 use axum::{Json, http::StatusCode, response::IntoResponse};
-use bincode;
 use serde::{Deserialize, Serialize};
+use serde_json::to_vec;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::api_utils::responses::INTERNAL_SERVER_ERROR;
@@ -47,12 +47,11 @@ pub async fn sign_in_user(
         login_time,
     };
 
-    let payload = match bincode::encode_to_vec(&event, bincode::config::standard()) {
-        Ok(bytes) => bytes,
-        Err(_) => return INTERNAL_SERVER_ERROR.into_response(),
+    let Ok(payload) = to_vec(&event) else {
+        return INTERNAL_SERVER_ERROR.into_response();
     };
 
-    if let Err(e) = state.producer.send(fluvio::RecordKey::NULL, payload).await {
+    if let Err(e) = state.login_producer.send(event.id, payload).await {
         error!("The event logging couldn't be sent through Fluvio: {:?}", e);
     }
 
