@@ -1,4 +1,3 @@
-use axum::response::{IntoResponse, Response};
 use hyper::StatusCode;
 
 use crate::error::ErrorResponse;

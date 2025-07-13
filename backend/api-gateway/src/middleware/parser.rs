@@ -48,8 +48,8 @@ where
 
     fn call(&mut self, mut req: Request) -> Self::Future {
         let full_path = req.uri().path();
-        let mut segments = full_path.trim_start_matches('/').splitn(2, '/');
-
+        let mut segments = full_path.trim_start_matches('/').splitn(3, '/');
+        let _protocol = segments.next().unwrap_or("api");
         let prefix = segments.next().unwrap_or("").to_string();
         let subpath = segments
             .next()

@@ -5,7 +5,7 @@ use axum::{
 };
 use dotenv::var;
 use hyper::header;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -38,7 +38,17 @@ pub fn app(config: Config) -> Router {
     let cors_layer = CorsLayer::new()
         .allow_origin(origins)
         .allow_credentials(true)
-        .allow_methods(Any)
+        .allow_methods([
+            Method::GET,
+            Method::HEAD,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::CONNECT,
+            Method::OPTIONS,
+            Method::TRACE,
+            Method::PATCH,
+        ])
         .allow_headers([
             header::CONTENT_TYPE,
             header::AUTHORIZATION,
@@ -46,16 +56,17 @@ pub fn app(config: Config) -> Router {
         ]);
 
     Router::new()
-        .route("/{*path}", any(handler::handler))
+        .route("/api/{*path}", any(handler::http_handler))
+        .route("/ws/{*path}", any(handler::ws_handler))
         .layer(TraceLayer::new_for_http())
         .layer(RateLimitLayer)
+        .layer(LoadBalancerLayer)
         .layer(AuthLayer {
             state: state.clone(),
         })
         .layer(RouterLayer {
             state: state.clone(),
         })
-        .layer(LoadBalancerLayer)
         .layer(ParserLayer)
         .layer(cors_layer)
         .with_state(state)
