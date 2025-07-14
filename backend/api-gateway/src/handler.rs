@@ -21,10 +21,16 @@ use crate::middleware::parser::ParsedURI;
 pub(crate) async fn http_handler(
     Extension(ParsedURI { prefix: _, subpath }): Extension<ParsedURI>,
     Extension(_): Extension<Service>,
-    Extension(Instance(uri)): Extension<Instance>,
+    Extension(Instance(base_uri)): Extension<Instance>,
     mut req: Request,
 ) -> Result<Response<Body>, StatusCode> {
-    let uri_str = format!("http://{uri}{subpath}");
+    let original_uri = req.uri();
+    let query = original_uri
+        .query()
+        .map(|q| format!("?{q}"))
+        .unwrap_or_default();
+
+    let uri_str = format!("http://{base_uri}{subpath}{query}");
     let uri: Uri = uri_str
         .parse()
         .map_err(|_| StatusCode::BAD_GATEWAY.with_debug("Invalid uri. Could not parse"))?;
