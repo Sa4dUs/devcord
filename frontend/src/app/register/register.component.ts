@@ -34,7 +34,7 @@ export class RegisterComponent {
       next: (data) => {
         // Hasta ahora no guardaba jeje. La sintaxis me la creo...la verdad
         localStorage.setItem('user', JSON.stringify({ username, email,password, telephone }));
-
+        
         if (data.token) {
           localStorage.setItem('token', data.token);
         }
