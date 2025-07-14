@@ -31,7 +31,7 @@ export class LogInComponent {
         telephone?: string;
       }
 
-      this.http.post<LoginResponse>('http://lamoara.duckdns.org:6969/auth/login', { username, password }).subscribe({ 
+      this.http.post<LoginResponse>('http://lamoara.duckdns.org:6969/api/auth/login', { username, password }).subscribe({ 
     
         next: (data) => {
           console.log(data)

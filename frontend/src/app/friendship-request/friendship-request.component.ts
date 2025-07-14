@@ -31,7 +31,7 @@ sendRequest() {
     return;
   }
 
-  this.http.post<any>('http://lamoara.duckdns.org:6969/user/friendship/request',
+  this.http.post<any>('http://lamoara.duckdns.org:6969/api/user/friendship/request',
     {
       to_user_username: this.Request.to_user_username
     },

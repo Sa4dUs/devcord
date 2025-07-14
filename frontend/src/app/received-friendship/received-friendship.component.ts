@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 interface FriendRequest {
-  username: string;
+  from_user_username: string;
   state: 'pending' | 'accepted' | 'rejected';
   created_at: string;
 }
@@ -48,18 +48,19 @@ export class FriendRequestsComponent implements OnInit {
     this.isLoading = true;
     this.error = null;
 
-    this.http.get<FriendRequest[]>('http://lamoara.duckdns.org:6969/user/friendship/received', {
+    this.http.get<FriendRequest[]>('http://lamoara.duckdns.org:6969/api/user/friendship/received', {
       headers: { Authorization: `Bearer ${token}` },
       params
     }).subscribe({
       next: (data) => {
+
         this.friendRequests = data;
         this.isLoading = false;
       },
       error: (err) => {
         this.error = 'Error al cargar solicitudes.';
         this.isLoading = false;
-        console.error(err);
+        console.error(err); 
       }
     });
   }

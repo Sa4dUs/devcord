@@ -30,7 +30,7 @@ export class RegisterComponent {
   if (this.registerForm.valid) {
     const { username, email, password, telephone } = this.registerForm.value;
 
-    this.http.post<any>('http://lamoara.duckdns.org:6969/auth/register', {username,email,password,telephone}).subscribe({
+    this.http.post<any>('http://lamoara.duckdns.org:6969/api/auth/register', {username,email,password,telephone}).subscribe({
       next: (data) => {
         // Hasta ahora no guardaba jeje. La sintaxis me la creo...la verdad
         localStorage.setItem('user', JSON.stringify({ username, email,password, telephone }));
