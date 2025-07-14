@@ -1,9 +1,11 @@
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
 use async_std::stream::StreamExt;
 use axum::extract::ws::Message;
 use dashmap::DashMap;
-use fluvio::{consumer::ConsumerConfigExtBuilder, metadata::topic::TopicSpec, FluvioConfig, Offset};
+use fluvio::{
+    FluvioConfig, Offset, consumer::ConsumerConfigExtBuilder, metadata::topic::TopicSpec,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{Error, from_slice, to_string};
 
@@ -21,15 +23,15 @@ where
 pub async fn run<T>(
     senders: Arc<DashMap<String, ResponseSender>>,
     addr: String,
-    topic: String,
-    obj_prefix: String,
+    topic_env: &str,
+    obj_prefix: &str,
 ) -> anyhow::Result<()>
 where
     T: for<'a> Deserialize<'a> + Serialize,
 {
+    let topic = env::var(topic_env).unwrap_or_else(|_| panic!("Topic env not set: {topic_env}"));
 
-    let mut fluvio_config =
-        FluvioConfig::new(addr);
+    let mut fluvio_config = FluvioConfig::new(addr);
     fluvio_config.use_spu_local_address = true;
 
     let fluvio = fluvio::Fluvio::connect_with_config(&fluvio_config).await?;
@@ -45,11 +47,9 @@ where
         .map(|topic| topic.name.clone())
         .collect::<Vec<String>>();
 
-    if !topic_names.contains(&topic) {
+    if !topic_names.contains(&topic.to_string()) {
         let topic_spec = TopicSpec::new_computed(1, 1, None);
-        admin
-            .create(topic.clone(), false, topic_spec)
-            .await?;
+        admin.create(topic.to_string(), false, topic_spec).await?;
     }
 
     let consumer_config = ConsumerConfigExtBuilder::default()
@@ -68,19 +68,27 @@ where
         };
 
         let notification: NotificationJson<T> = NotificationJson {
-            header: obj_prefix.clone(),
+            header: obj_prefix.to_string(),
             info: obj,
         };
 
-        if let Ok(response) = to_string(&notification) 
-            && let Some(record_key) = record.key()
-            && let Ok(key) = from_slice::<String>(record_key)
-            && let Some(sender) = senders.get(&key) {
-                sender.send(Message::text(response)).await.ok();
-            }
-            else {
-                continue;
-            }
+        let Ok(response) = to_string(&notification) else {
+            continue;
+        };
+
+        let Some(record_key) = record.key() else {
+            continue;
+        };
+
+        let Ok(key) = from_slice::<String>(record_key) else {
+            continue;
+        };
+
+        let Some(sender) = senders.get(&key) else {
+            continue;
+        };
+
+        sender.send(Message::text(response)).await.ok();
     }
 
     Ok(())

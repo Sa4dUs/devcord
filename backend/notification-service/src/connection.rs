@@ -17,7 +17,7 @@ pub async fn notification_handler(
     claims: Claims,
 ) -> impl IntoResponse {
     let (sender, receiver) = mpsc::channel(10);
-    
+
     state.channels.insert(claims.user_id.clone(), sender);
 
     ws.on_upgrade(move |socket| handle_notifications(socket, receiver, state, claims))

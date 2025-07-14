@@ -2,36 +2,52 @@ use std::{env::var, net::SocketAddr, sync::Arc};
 
 use axum::{Router, extract::ws::Message, routing::get, serve};
 use dashmap::DashMap;
-use fluvio::{Fluvio, FluvioConfig};
 use tokio::{
     net::TcpListener,
     sync::mpsc::{Receiver, Sender},
 };
 
-use crate::connection::notification_handler;
+use crate::{connection::notification_handler, fluvio_reader};
 
 pub type ResponseSender = Sender<Message>;
 pub type ResponseReceiver = Receiver<Message>;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct AppState {
     pub channels: Arc<DashMap<String, ResponseSender>>,
-    pub fluvio: Arc<Fluvio>,
 }
 
 pub async fn app() -> anyhow::Result<Router> {
-    let mut fluvio_config =
-        FluvioConfig::new(var("FLUVIO_ADDR").expect("FLUVIO_ADDR env not set").trim());
-    fluvio_config.use_spu_local_address = true;
+    let state = Arc::new(AppState::default());
 
-    let fluvio = fluvio::Fluvio::connect_with_config(&fluvio_config).await?;
-
-    let state = Arc::new(AppState {
-        channels: Arc::default(),
-        fluvio: Arc::new(fluvio),
-    });
-
+    let addr = var("FLUVIO_ADDR")
+        .expect("FLUVIO_ADDR env not set")
+        .trim()
+        .to_string();
     let channels = state.channels.clone();
+
+    let mut handles = Vec::default();
+
+    let channels_c = channels.clone();
+    let addr_c = addr.clone();
+    handles.push(tokio::spawn(fluvio_reader::run::<
+        topic_structs::FriendRequestCreated,
+    >(
+        channels_c,
+        addr_c,
+        "USER_RESQUEST_TOPIC",
+        "friendship_requested",
+    )));
+    let channels_c = channels.clone();
+    let addr_c = addr.clone();
+    handles.push(tokio::spawn(fluvio_reader::run::<
+        topic_structs::FriendRequestAnswered,
+    >(
+        channels_c,
+        addr_c,
+        "USER_ANSWER_TOPIC",
+        "friendship_answered",
+    )));
 
     let router: Router = Router::new()
         .route("/", get(notification_handler))
