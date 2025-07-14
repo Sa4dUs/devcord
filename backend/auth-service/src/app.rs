@@ -67,15 +67,15 @@ pub async fn run() -> Result<()> {
     let fluvio = fluvio::Fluvio::connect_with_config(&fluvio_config).await?;
 
     let register_topic = var("AUTH_REGISTER_TOPIC")
-        .unwrap_or("auth_register".to_owned())
+        .unwrap_or("auth-register".to_owned())
         .trim()
         .to_string();
     let login_topic = var("AUTH_LOGIN_TOPIC")
-        .unwrap_or("auth_login".to_owned())
+        .unwrap_or("auth-login".to_owned())
         .trim()
         .to_string();
     let logout_topic = var("AUTH_LOGOUT_TOPIC")
-        .unwrap_or("auth_logout".to_owned())
+        .unwrap_or("auth-logout".to_owned())
         .trim()
         .to_string();
 

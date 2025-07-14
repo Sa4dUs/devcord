@@ -46,7 +46,6 @@ pub fn app(config: Config) -> Router {
     Router::new()
         .route("/{*path}", any(handler::handler))
         .layer(TraceLayer::new_for_http())
-        .layer(cors_layer)
         .layer(RateLimitLayer)
         .layer(AuthLayer {
             state: state.clone(),
@@ -55,6 +54,7 @@ pub fn app(config: Config) -> Router {
             state: state.clone(),
         })
         .layer(ParserLayer)
+        .layer(cors_layer)
         .with_state(state)
 }
 

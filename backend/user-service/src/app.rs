@@ -88,17 +88,17 @@ pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
     let fluvio = fluvio::Fluvio::connect_with_config(&fluvio_config).await?;
 
     let auth_registered_consumer_topic = var("AUTH_REGISTER_TOPIC")
-        .unwrap_or("auth_register".to_owned())
+        .unwrap_or("auth-register".to_owned())
         .trim()
         .to_string();
 
     let request_producer_topic = var("USER_RESQUEST_TOPIC")
-        .unwrap_or("friendships_request".to_owned())
+        .unwrap_or("friendships-request".to_owned())
         .trim()
         .to_string();
 
     let answered_producer_topic = var("USER_ANSWER_TOPIC")
-        .unwrap_or("friendships_answer".to_owned())
+        .unwrap_or("friendships-answer".to_owned())
         .trim()
         .to_string();
 
