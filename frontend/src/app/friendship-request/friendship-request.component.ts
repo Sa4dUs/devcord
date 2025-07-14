@@ -36,7 +36,7 @@ sendRequest() {
       to_user_username: this.Request.to_user_username
     },
     {
-      headers: { //eh aquí un problema 
+      headers: { //eh aquí un no problema 
         Authorization: `Bearer ${token}`
       }
     }
