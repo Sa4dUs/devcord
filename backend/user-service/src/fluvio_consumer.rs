@@ -10,12 +10,14 @@ use crate::{
 };
 
 pub async fn run(fluvio: Fluvio, db: sqlx::PgPool) -> anyhow::Result<()> {
+    //TODO! do a proper fix on this
+    let auth_registered_consumer_topic = var("AUTH_REGISTER_TOPIC")
+        .unwrap_or("auth-register".to_owned())
+        .trim()
+        .to_string();
+
     let consumer_config = ConsumerConfigExtBuilder::default()
-        .topic(
-            var("CONSUMER_TOPIC")
-                .expect("CONSUMER_TOPIC env not set")
-                .trim(),
-        )
+        .topic(auth_registered_consumer_topic)
         .offset_start(Offset::beginning())
         .build()
         .expect("Failed to build consumer config");

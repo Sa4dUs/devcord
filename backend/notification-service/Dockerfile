@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 
 COPY ./notification-service/Cargo.toml ./notification-service/Cargo.lock ./
 COPY ./notification-service/src ./src
-
+COPY topic_structs ../topic_structs
 ARG BUILD_MODE=release
 
 RUN echo "Building in $BUILD_MODE mode"

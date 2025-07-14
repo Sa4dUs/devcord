@@ -16,6 +16,9 @@ use std::{env, time::Duration};
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing::info;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{EnvFilter, fmt};
 
 pub async fn run() -> Result<()> {
     dotenv().ok();
@@ -35,6 +38,11 @@ pub async fn run() -> Result<()> {
             header::AUTHORIZATION,
             header::ACCESS_CONTROL_ALLOW_ORIGIN,
         ]);
+
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .init();
 
     let trace_layer = TraceLayer::new_for_http();
 

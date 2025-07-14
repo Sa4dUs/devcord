@@ -10,8 +10,7 @@ use fluvio::{Fluvio, FluvioConfig, TopicProducer, metadata::topic::TopicSpec, sp
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
-use tracing::Level;
-use tracing_subscriber::{Layer, filter, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
     fluvio_consumer,
@@ -34,13 +33,6 @@ pub struct AppState {
 }
 
 pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_filter(filter::LevelFilter::from_level(Level::DEBUG)),
-        )
-        .init();
-
     let origins: Vec<HeaderValue> = var("CORS_ORIGIN")
         .expect("CORS_ORIGIN env not set")
         .split(",")
@@ -56,6 +48,11 @@ pub async fn app() -> anyhow::Result<(Router, Fluvio, sqlx::PgPool)> {
             header::AUTHORIZATION,
             header::ACCESS_CONTROL_ALLOW_ORIGIN,
         ]);
+
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .init();
 
     let trace_layer = TraceLayer::new_for_http();
 
