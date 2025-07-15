@@ -110,6 +110,7 @@ where
             };
 
             req.extensions_mut().insert(instance);
+            req.extensions_mut().insert(circuit_breaker);
 
             let response = inner.call(req).await?;
             Ok(response)

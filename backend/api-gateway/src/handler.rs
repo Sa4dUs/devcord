@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use axum::body::to_bytes;
-use axum::extract::WebSocketUpgrade;
 use axum::extract::ws::{CloseFrame, Message, Utf8Bytes, WebSocket};
+use axum::extract::{State, WebSocketUpgrade};
 use axum::{
     Extension,
     body::Body,
@@ -11,19 +13,30 @@ use axum::{
 use futures_util::{SinkExt, StreamExt};
 use hyper::header::CONTENT_LENGTH;
 
+use dashmap::DashMap;
 use reqwest::Client;
 use tokio_tungstenite::connect_async;
 
+use crate::circuit_breaker::CircuitBreaker;
 use crate::config::{Instance, Service};
 use crate::error::ErrorResponse;
 use crate::middleware::parser::ParsedURI;
+use crate::state::AppState;
 
 pub(crate) async fn http_handler(
     Extension(ParsedURI { prefix: _, subpath }): Extension<ParsedURI>,
     Extension(_): Extension<Service>,
+    Extension(cb): Extension<Arc<DashMap<String, CircuitBreaker>>>,
     Extension(Instance(base_uri)): Extension<Instance>,
+    State(state): State<AppState>,
     mut req: Request,
 ) -> Result<Response<Body>, StatusCode> {
+    let mut circuit_breaker = cb
+        .entry(base_uri.clone())
+        .or_insert(CircuitBreaker::with_config(
+            state.clone().config.circuit_breaker,
+        ));
+
     let original_uri = req.uri();
     let query = original_uri
         .query()
@@ -58,10 +71,10 @@ pub(crate) async fn http_handler(
 
     forward_req = forward_req.body(body_bytes);
 
-    let resp = forward_req
-        .send()
-        .await
-        .map_err(|_| StatusCode::BAD_GATEWAY.with_debug("Could not forward request"))?;
+    let resp = forward_req.send().await.map_err(|_| {
+        circuit_breaker.register_failure();
+        StatusCode::BAD_GATEWAY.with_debug("Could not forward request")
+    })?;
 
     let mut response_builder = Response::builder().status(resp.status());
 
@@ -77,6 +90,7 @@ pub(crate) async fn http_handler(
         .body(Body::from(resp_bytes))
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR.with_debug("Could not build response"))?;
 
+    circuit_breaker.register_success();
     Ok(response)
 }
 
