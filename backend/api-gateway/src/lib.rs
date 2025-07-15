@@ -27,7 +27,7 @@ pub(crate) mod middleware;
 pub(crate) mod state;
 
 pub fn app(config: Config) -> Router {
-    let state = AppState::new(config);
+    let state = AppState::new(config.clone());
 
     let origins: Vec<HeaderValue> = var("CORS_ORIGIN")
         .expect("CORS_ORIGIN env not set")
@@ -60,7 +60,7 @@ pub fn app(config: Config) -> Router {
         .route("/api/{*path}", any(handler::http_handler))
         .route("/ws/{*path}", any(handler::ws_handler))
         .layer(TraceLayer::new_for_http())
-        .layer(RateLimitLayer)
+        .layer(RateLimitLayer::from_config(config.rate_limit))
         .layer(LoadBalancerLayer)
         .layer(AuthLayer {
             state: state.clone(),
