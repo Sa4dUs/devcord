@@ -1,7 +1,18 @@
-
 .example-boundary {
   width: 400px;
   height: 400px;
   max-width: 100%;
-  border: dotted #ccc 2px;
+  border: 2px dotted gray;
+  position: relative;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+.cropper-container {
+  width: 400px;
+  height: 400px;
+  position: relative;
+  border: 2px dashed #666;
+  margin: 20px auto;
 }
