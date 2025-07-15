@@ -1,12 +1,17 @@
 .bubble {
   width: 100px;
   height: 100px;
-  background: lightblue;
   border-radius: 50%;
-  cursor: move;
+  background-color: lightblue;
   display: flex;
   justify-content: center;
   align-items: center;
-  position: absolute; /* <--- esto es importante */
   user-select: none;
+  cursor: grab;
+  position: absolute;
+  transition: background-color 0.3s;
+}
+
+.bubble.colliding {
+  background-color: tomato;
 }

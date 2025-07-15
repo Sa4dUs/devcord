@@ -1,3 +1,50 @@
-<div class="example-boundary" style="position: relative; width: 500px; height: 300px; border: 2px dotted gray;">
-  <bubble [boundarySelector]="'.example-boundary'"></bubble>
+<div
+  class="example-boundary"
+  [ngStyle]="{
+    'background-image': backgroundStyle,
+    'background-size': 'cover',
+    'background-position': 'center',
+    'background-repeat': 'no-repeat'
+  }"
+>
+  <bubble
+    *ngFor="let bubble of bubblesData; let i = index; trackBy: trackById"
+    [boundarySelector]="'.example-boundary'"
+    [id]="bubble.id"
+    [isColliding]="bubble.isColliding"
+    [isDragging]="bubble.isDragging"
+    [x]="bubble.x"
+    [y]="bubble.y"
+    (dragStateChanged)="onBubbleDragStateChanged(i, $event)"
+    (positionChanged)="onBubbleMoved(i, $event)"
+  ></bubble>
+</div>
+
+
+<button (click)="addBubble()">Añadir burbuja</button>
+<button (click)="openFileSelector()">Elegir imagen de fondo</button>
+
+
+
+<input
+  type="file"
+  accept="image/*"
+  #fileInput
+  (change)="fileChangeEvent($event)"
+  style="display: none"
+/>
+
+<div *ngIf="showCropper" class="cropper-container">
+  <image-cropper
+  [imageChangedEvent]="imageChangedEvent"
+  [maintainAspectRatio]="false"
+  [cropperStaticWidth]="400"
+  [cropperStaticHeight]="400"
+  [resizeToWidth]="400"
+  format="png"
+  (imageCropped)="imageCropped($event)"
+></image-cropper>
+
+  <button (click)="applyCrop()">Aplicar fondo</button>
+  <button (click)="cancelCrop()">Cancelar</button>
 </div>

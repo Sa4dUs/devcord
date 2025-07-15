@@ -2,6 +2,10 @@
   class="bubble"
   cdkDrag
   [cdkDragBoundary]="boundarySelector"
+  [class.colliding]="isColliding"
+  (cdkDragStarted)="onDragStarted($event)"
+  (cdkDragEnded)="onDragEnded($event)"
+  (cdkDragMoved)="onDragMoved($event)"
 >
-  Burbuja
+  {{ id }}
 </div>
