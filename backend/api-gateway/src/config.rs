@@ -14,7 +14,6 @@ pub struct Config {
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct Service {
     pub(crate) instances: Vec<Instance>,
-    // FIXME(Sa4dUs): Change this to a HashMap for O(1) time search
     pub(crate) routes: Vec<Route>,
     #[serde(default)]
     pub(crate) strategy: Strategy,

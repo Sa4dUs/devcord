@@ -4,16 +4,20 @@ use std::{
 };
 
 use axum::{
+    RequestExt,
     extract::Request,
     response::{IntoResponse, Response},
 };
-use hyper::{StatusCode, header::AUTHORIZATION};
+use axum_extra::{
+    TypedHeader,
+    headers::{Authorization, authorization::Bearer},
+};
+use hyper::StatusCode;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use tower::{Layer, Service};
 
 use crate::{error::ErrorResponse, jwt::Claims, middleware::parser::ParsedURI, state::AppState};
 
-// NOTE(Sa4dUs): Maybe this can be a tuple struct?
 #[derive(Clone)]
 pub(crate) struct AuthLayer {
     pub(crate) state: AppState,
@@ -49,7 +53,7 @@ where
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, req: Request) -> Self::Future {
+    fn call(&mut self, mut req: Request) -> Self::Future {
         let mut inner = self.inner.clone();
         let AppState { config } = self.state.clone();
 
@@ -63,18 +67,21 @@ where
                 }
             };
 
-            // FIXME(Sa4dUs): Make this decent once `config.path` is a HashMap
-            // FIXME(Sa4dUs): Replace `unwrap` calls with better error handling
-            // We can unwrap because the router middleware checks if it's a valid route
-            // but it would be better to return some type of `bug!()` like message
-            let route = config
+            let route = match config
                 .services
                 .get(prefix)
                 .unwrap()
                 .routes
                 .iter()
                 .find(|r| r.path == *subpath)
-                .unwrap();
+            {
+                Some(r) => r,
+                None => return Ok(StatusCode::NOT_FOUND
+                    .with_debug(
+                        "This is a bug! Unexpected route should be handled by router middleware.",
+                    )
+                    .into_response()),
+            };
 
             if !route.protected {
                 // If route isn't protected, we don't require the client to send
@@ -84,29 +91,22 @@ where
             }
 
             // Check `Authorization: Bearer {TOKEN}`
-            let token = match req.headers().get(&AUTHORIZATION) {
-                Some(val) => val.to_str().unwrap(), // FIXME(Sa4dUs): Handle this error properly
-                None => {
+            let TypedHeader(Authorization(bearer)) = match req
+                .extract_parts::<TypedHeader<Authorization<Bearer>>>()
+                .await
+            {
+                Ok(bearer) => bearer,
+                Err(_) => {
                     return Ok(StatusCode::UNAUTHORIZED
-                        .with_debug("Authorization header must be providen for protected routes")
+                        .with_debug("Authorization header with valid format must be providen for protected routes")
                         .into_response());
                 }
             };
 
-            // FIXME(Sa4dUs): This is prob not the right way to do this
-            let token = if let Some(stripped) = token.strip_prefix("Bearer ") {
-                stripped
-            } else {
-                return Ok(StatusCode::UNAUTHORIZED
-                    .with_debug("Invalid Authorization header. Incorrect format")
-                    .into_response());
-            };
-
-            tracing::debug!("{token:?}");
             let secret = std::env::var("JWT_SECRET").expect("env variable JWT_SECRET is not set");
 
             if decode::<Claims>(
-                token,
+                bearer.token(),
                 &DecodingKey::from_secret(secret.as_ref()),
                 &Validation::default(),
             )
