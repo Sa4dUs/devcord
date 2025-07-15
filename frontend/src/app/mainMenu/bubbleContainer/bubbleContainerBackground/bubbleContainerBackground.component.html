@@ -1,0 +1,38 @@
+
+<input
+  type="file"
+  accept="image/*"
+  #fileInput
+  (change)="fileChangeEvent($event)"
+  style="display: none"
+/>
+
+<div class="background-tools">
+  <button (click)="removeBackground()">Eliminar fondo</button>
+
+  <label>
+    Color de fondo:
+    <input type="color" (change)="changeBackgroundColor($event)" />
+  </label>
+</div>
+
+<div
+  *ngIf="showCropper"
+  class="cropper-container"
+  [style.width.px]="originalImageWidth"
+  [style.height.px]="originalImageHeight"
+>
+  <image-cropper
+    [imageChangedEvent]="imageChangedEvent"
+    [maintainAspectRatio]="false"
+    [cropperStaticWidth]="boundaryWidth"
+    [cropperStaticHeight]="boundaryHeight"
+    format="png"
+    (imageCropped)="imageCropped($event)"
+  ></image-cropper>
+
+  <div class="cropper-actions">
+    <button (click)="applyCrop()">Aplicar fondo</button>
+    <button (click)="cancelCrop()">Cancelar</button>
+  </div>
+</div>

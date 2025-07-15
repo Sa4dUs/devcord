@@ -57,7 +57,6 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
 
     const bubbleEl = this.el.nativeElement.querySelector('.bubble');
     if (bubbleEl) {
-      // Leer posición absoluta via left/top
       const left = parseFloat(bubbleEl.style.left) || 0;
       const top = parseFloat(bubbleEl.style.top) || 0;
       this.x = left;
