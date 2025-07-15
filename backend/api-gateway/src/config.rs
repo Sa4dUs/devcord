@@ -9,6 +9,8 @@ pub struct Config {
     pub(crate) services: std::collections::HashMap<String, Service>,
     #[serde(default)]
     pub(crate) rate_limit: RateLimitConfig,
+    #[serde(default)]
+    pub(crate) circuit_breaker: CircuitBreakerConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -46,6 +48,21 @@ impl Default for RateLimitConfig {
         Self {
             max_requests: 100,
             window_seconds: 60,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CircuitBreakerConfig {
+    pub failure_threshold: u32,
+    pub open_window_seconds: u64,
+}
+
+impl Default for CircuitBreakerConfig {
+    fn default() -> Self {
+        Self {
+            failure_threshold: 3,
+            open_window_seconds: 30,
         }
     }
 }

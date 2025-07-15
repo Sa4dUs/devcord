@@ -19,6 +19,8 @@ use crate::{
 };
 
 pub mod config;
+
+pub(crate) mod circuit_breaker;
 pub(crate) mod error;
 pub(crate) mod handler;
 pub(crate) mod jwt;
@@ -61,7 +63,7 @@ pub fn app(config: Config) -> Router {
         .route("/ws/{*path}", any(handler::ws_handler))
         .layer(TraceLayer::new_for_http())
         .layer(RateLimitLayer::from_config(config.rate_limit))
-        .layer(LoadBalancerLayer)
+        .layer(LoadBalancerLayer::with_circuit_breaker())
         .layer(AuthLayer {
             state: state.clone(),
         })
