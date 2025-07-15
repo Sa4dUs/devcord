@@ -6,9 +6,15 @@
     <strong>{{ request.from_user_username }}</strong><br>
     Estado: {{ request.state }}<br>
     Invitación desde: {{ request.created_at | date:'short' }}
-  </li>
 
+    <!-- Solo si está pendiente -->
+    <div *ngIf="request.state === 'pending'" class="actions">
+      <button (click)="onClickAccept(request)">Sí</button>
+      <button (click)="onClickReject(request)">No</button>
+    </div>
+  </li>
 </ul>
+
 
 <div *ngIf="!isLoading && friendRequests.length === 0">No tienes solicitudes recibidas.</div>
 

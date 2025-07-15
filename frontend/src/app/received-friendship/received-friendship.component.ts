@@ -76,4 +76,67 @@ export class FriendRequestsComponent implements OnInit {
       this.loadFriendRequests();
     }
   }
+  //tengo que actualizar a la fuerza desde aquí porque sino pasa lo que pasa...cargando...
+  //¿cómo se hace? lo sabremos en próximos capítulos. Posible solución 5J=> actualizar por todas partes aunque no haga falta.
+onClickAccept(request: FriendRequest): void {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    console.error('No token found.');
+    return;
+  }
+
+  const body = {
+    to_user_username: request.from_user_username
+  };
+
+  this.http.post('http://lamoara.duckdns.org:6969/api/user/friendship/accept', body, {
+    headers: { Authorization: `Bearer ${token}` }
+  }).subscribe({
+    next: () => {
+      console.log('Solicitud aceptada correctamente.');
+      this.loadFriendRequests(); // recarga la lista
+    },
+    error: (err) => {
+      if (err.status === 404) {
+        console.warn('No se encontró la solicitud.');
+      } else if (err.status === 409) {
+        console.warn('Ya sois amigos.');
+      } else {
+        console.error('Error al aceptar solicitud:', err);
+      }
+    }
+  });
+}
+
+
+onClickReject(request: FriendRequest): void {
+const token = localStorage.getItem('token');
+  if (!token) {
+    console.error('No token found.');
+    return;
+  }
+
+  const body = {
+    to_user_username: request.from_user_username
+  };
+
+  this.http.post('http://lamoara.duckdns.org:6969/api/user/friendship/reject', body, {
+    headers: { Authorization: `Bearer ${token}` }
+  }).subscribe({
+    next: () => {
+      console.log('Morirás solo.');
+      this.loadFriendRequests(); 
+    },
+    error: (err) => {
+      if (err.status === 404) {
+        console.warn('No se encontró la solicitud.');
+      } else if (err.status === 409) {
+        console.warn('Ya sois amigos.');
+      } else {
+        console.error('Error al aceptar solicitud:', err);
+      }
+    }
+  });
+}
+
 }
