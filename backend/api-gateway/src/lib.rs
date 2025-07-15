@@ -22,6 +22,7 @@ pub mod config;
 pub(crate) mod error;
 pub(crate) mod handler;
 pub(crate) mod jwt;
+pub(crate) mod load_balancer;
 pub(crate) mod middleware;
 pub(crate) mod state;
 

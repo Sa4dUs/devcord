@@ -8,10 +8,9 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use hyper::StatusCode;
-use rand::seq::IndexedRandom;
 use tower::{Layer, Service};
 
-use crate::error::ErrorResponse;
+use crate::{error::ErrorResponse, load_balancer::LoadBalancer};
 
 #[derive(Clone)]
 pub struct LoadBalancerLayer;
@@ -61,9 +60,9 @@ where
                 }
             };
 
-            // FIXME(Sa4dUs): Add strategy pattern for different load balancing strats
-            let instance = match service.instances.choose(&mut rand::rng()) {
-                Some(uri) => uri.clone(),
+            let lb = LoadBalancer::new(service.strategy.clone());
+            let instance = match lb.select_instance(&service.instances) {
+                Some(val) => val,
                 None => {
                     return Ok(StatusCode::INTERNAL_SERVER_ERROR
                         .with_debug("Could not get an instance following load balancer strategy")
