@@ -1,0 +1,14 @@
+<div *ngIf="loading">Cargando amigos...</div>
+<div *ngIf="error" class="error">{{ error }}</div>
+
+<ng-container *ngIf="!loading && !error">
+  <ul *ngIf="requests.length > 0">
+    <li *ngFor="let req of requests">
+      <strong>{{ req.username }}</strong> — {{ req.created_at | date:'short' }}
+    </li>
+  </ul>
+
+  <p *ngIf="requests.length === 0">
+    No tienes amigos aún.
+  </p>
+</ng-container>

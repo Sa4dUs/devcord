@@ -3,22 +3,21 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 
-interface SentRequest {
-  to_user_username: string;
-  state: 'pending' | 'accepted' | 'rejected';
+interface FriendList {
+  username: string;
   created_at: string;
 }
 
 
 @Component({
-  selector: 'app-friendship-sent',
+  selector: 'app-friendship-friend',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './friendship-sent.component.html',
-  styleUrls: ['./friendship-sent.component.scss']
+  templateUrl: './friendship-friend.component.html',
+  styleUrls: ['./friendship-friend.component.scss']
 })
-export class FriendshipSentComponent implements OnInit {
-  requests: SentRequest[] = [];
+export class FriendshipFriendComponent implements OnInit {
+  requests: FriendList[] = [];
   loading = true;
   error: string | null = null;
 
@@ -46,17 +45,17 @@ ngOnInit() {
 
   const params = new HttpParams().set('from', '0').set('to', '20'); //ya sé que es una chapuza, pero así se queda...
 
-  this.http.get<SentRequest[]>('http://lamoara.duckdns.org:6969/api/user/friendship/sent', {
+  this.http.get<FriendList[]>('http://lamoara.duckdns.org:6969/api/user/friendship/friends', {
     headers: { Authorization: `Bearer ${token}` },
     params
   }).subscribe({
     next: data => {
+        console.log(data);
+    this.requests = data.map(d => ({
+    username: d.username,
+    created_at: d.created_at
+    }));
 
-      this.requests = data.map(d => ({
-        to_user_username: d.to_user_username,
-        state: d.state,
-        created_at: d.created_at
-      }));
 
       this.loading = false;
     },

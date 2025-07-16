@@ -6,7 +6,7 @@ import { UserComponent } from './user/user.component';
 import { FriendshipRequestComponent } from './friendship-request/friendship-request.component';
 import { FriendRequestsComponent } from './received-friendship/received-friendship.component';
 import { FriendshipSentComponent } from './friendship-sent/friendship-sent.component';
-
+import {FriendshipFriendComponent} from './friendship-friend/friendship-friend.component';
 export const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'login', component: LogInComponent },
@@ -15,6 +15,7 @@ export const routes: Routes = [
   { path: 'friendship-request', component: FriendshipRequestComponent},
   { path: 'recieved-friendship', component: FriendRequestsComponent},
   { path: 'friendship-sent', component: FriendshipSentComponent},
+  { path: 'friendship-friend', component: FriendshipFriendComponent},
   { path: '', redirectTo: 'home', pathMatch: 'full' } 
 
 ];
