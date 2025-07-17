@@ -1,0 +1,15 @@
+<div *ngIf="loading">Desbloqueando usuario...</div>
+<div *ngIf="error" class="error">{{ error }}</div>
+
+<form (ngSubmit)="unblockUser(); $event.preventDefault()">
+  <label for="username">Nombre de usuario a indultar:</label>
+  <input
+    id="username"
+    [(ngModel)]="toUserUsername"
+    name="username"
+    required
+  />
+  <button type="submit">Desbloquear</button>
+</form>
+
+<p *ngIf="success" class="success">{{ success }}</p>

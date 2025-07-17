@@ -1,0 +1,15 @@
+<div *ngIf="loading">Bloqueando usuario...</div>
+<div *ngIf="error" class="error">{{ error }}</div>
+
+<form (ngSubmit)="blockUser(); $event.preventDefault()">
+  <label for="username">Nombre de usuario a bloquear:</label>
+  <input
+    id="username"
+    [(ngModel)]="toUserUsername"
+    name="username"
+    required
+  />
+  <button type="submit">Bloquear</button>
+</form>
+
+<p *ngIf="success" class="success">{{ success }}</p>
