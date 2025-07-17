@@ -75,7 +75,7 @@ export default [
     },
 
     {
-        files: ["**/*.{js,ts,tsx,css,scss,md,yml,yaml,graphql,mdx}"],
+        files: ["**/*.{js,ts,tsx,css,md,yml,yaml,graphql,mdx}"],
         plugins: {
             prettier: prettierPlugin,
         },
