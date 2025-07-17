@@ -10,7 +10,7 @@ use axum::{
 use hyper::StatusCode;
 use tower::{Layer, Service};
 
-use crate::{middleware::parser::ParsedURI, state::AppState};
+use crate::{error::ErrorResponse, middleware::parser::ParsedURI, state::AppState};
 
 #[derive(Clone)]
 pub(crate) struct RouterLayer {
@@ -54,17 +54,29 @@ where
         Box::pin(async move {
             let ParsedURI { prefix, subpath } = match req.extensions().get::<ParsedURI>() {
                 Some(uri) => uri,
-                None => return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+                None => {
+                    return Ok(StatusCode::INTERNAL_SERVER_ERROR
+                        .with_debug("Could not get `ParsedURI` extension at router middleware")
+                        .into_response());
+                }
             };
 
             let service = match config.services.get(prefix) {
                 Some(svc) => svc,
-                None => return Ok(StatusCode::NOT_FOUND.into_response()),
+                None => {
+                    return Ok(StatusCode::NOT_FOUND
+                        .with_debug("Could not get service. Service not found")
+                        .into_response());
+                }
             };
 
             let route = match service.routes.iter().find(|r| r.path == *subpath) {
                 Some(r) => r,
-                None => return Ok(StatusCode::NOT_FOUND.into_response()),
+                None => {
+                    return Ok(StatusCode::NOT_FOUND
+                        .with_debug("Could not get route. Route not found")
+                        .into_response());
+                }
             };
 
             match route
@@ -73,7 +85,11 @@ where
                 .find(|m| m.eq_ignore_ascii_case(req.method().as_str()))
             {
                 Some(_) => {}
-                None => return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response()),
+                None => {
+                    return Ok(StatusCode::METHOD_NOT_ALLOWED
+                        .with_debug("Method not allowed")
+                        .into_response());
+                }
             };
 
             req.extensions_mut().insert(service.clone());
