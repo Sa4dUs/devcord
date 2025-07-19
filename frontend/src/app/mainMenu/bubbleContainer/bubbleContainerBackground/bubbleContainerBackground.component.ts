@@ -25,7 +25,7 @@ export class BubbleContainerBackground {
 
     @Output() backgroundSelected = new EventEmitter<string>();
 
-    imageChangedEvent: any = "";
+    imageChangedEvent: string = "";
     croppedImage: string = "";
     showCropper = false;
 
