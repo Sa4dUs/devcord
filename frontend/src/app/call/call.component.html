@@ -1,0 +1,22 @@
+<div class="callScreen">
+  <webcam
+    *ngIf="showWebcam"
+    [height]="height"
+    [width]="width"
+    [trigger]="triggerObservable()"
+    [videoOptions]="videoOptions"
+    (imageCapture)="handleImage($event)"
+    (initError)="handleInitError($event)">
+  </webcam>
+
+  <canvas #canvas></canvas>
+
+  <cameraButton (capture)="capture()"></cameraButton>
+
+  <button (click)="toggleWebcam()">
+    {{ showWebcam ? 'Apagar Cámara' : 'Encender Cámara' }}
+  </button>
+    <button (click)="downloadImage()" [disabled]="!webcamImage">
+    Guardar Foto
+  </button>
+</div>
