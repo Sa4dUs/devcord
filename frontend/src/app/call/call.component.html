@@ -1,0 +1,13 @@
+<div class="video-container">
+  <video #localVideo autoplay playsinline muted class="local-video"></video>
+  <video #remoteVideo autoplay playsinline class="remote-video"></video>
+</div>
+
+<div class="controls">
+  <button (click)="toggleAudio()">
+    {{ audioOn ? 'Mute Audio' : 'Unmute Audio' }}
+  </button>
+  <button (click)="toggleCamera()">
+    {{ cameraOn ? 'Apagar Cámara' : 'Encender Cámara' }}
+  </button>
+</div>

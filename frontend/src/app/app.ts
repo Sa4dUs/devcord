@@ -1,11 +1,13 @@
 import { Component } from "@angular/core";
-import { RouterOutlet } from "@angular/router";
+import { WebcamModule } from "ngx-webcam";
+import { Call } from "./call/call.component";
 
 @Component({
     selector: "app-root",
-    imports: [RouterOutlet],
+    standalone: true,
+    imports: [WebcamModule, Call],
     templateUrl: "./app.html",
-    styleUrl: "./app.scss",
+    styleUrls: ["./app.scss"],
 })
 export class App {
     protected title = "frontend";

@@ -1,0 +1,14 @@
+.video-container {
+  display: flex;
+  gap: 10px;
+}
+
+video {
+  width: 600px;
+  height: auto;
+  background: black;
+}
+
+.local-video {
+  transform: scaleX(-1);
+}
