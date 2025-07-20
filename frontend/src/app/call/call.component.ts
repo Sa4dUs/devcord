@@ -1,103 +1,121 @@
-import { Component, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { WebcamModule, WebcamImage, WebcamInitError, WebcamUtil } from 'ngx-webcam';
-import { Subject, Observable, flatMap } from 'rxjs';
-import { CameraButton } from "./cameraButton/cameraButton.component";
+import {
+    Component,
+    ElementRef,
+    ViewChild,
+    AfterViewInit,
+    OnDestroy,
+} from "@angular/core";
+import { CommonModule } from "@angular/common";
 
 @Component({
-  selector: 'call',
-  standalone: true,
-  imports: [CommonModule, WebcamModule, CameraButton],
-  templateUrl: './call.component.html',
-  styleUrls: ['./call.component.scss']
+    selector: "call",
+    standalone: true,
+    imports: [CommonModule],
+    templateUrl: "./call.component.html",
+    styleUrls: ["./call.component.scss"],
 })
-export class Call implements AfterViewInit {
-  @ViewChild('canvas') canvas!: ElementRef<HTMLCanvasElement>;
+export class Call implements AfterViewInit, OnDestroy {
+    @ViewChild("localVideo") localVideo!: ElementRef<HTMLVideoElement>;
+    @ViewChild("remoteVideo") remoteVideo!: ElementRef<HTMLVideoElement>;
 
-  public showWebcam = true;
-  public multipleWebcamsAvailable = false;
-  public height = 400;
-  public width = 600;
-  public trigger: Subject<void> = new Subject<void>();
-  public webcamImage?: WebcamImage;
-  public errors: WebcamInitError[] = [];
-  public autoSaveAfterCapture = false;
+    private localStream!: MediaStream;
+    private localPeer!: RTCPeerConnection;
+    private remotePeer!: RTCPeerConnection;
 
-  public videoOptions: MediaTrackConstraints = {
-    width: { ideal: this.width },
-    height: { ideal: this.height },
-    facingMode: 'user'
-  };
+    private isCameraOn = true;
+    private isAudioOn = true;
 
-  ngAfterViewInit(): void {
-    WebcamUtil.getAvailableVideoInputs()
-      .then((mediaDevices: MediaDeviceInfo[]) => {
-        this.multipleWebcamsAvailable = mediaDevices.length > 1;
-      })
-      .catch(err => console.error("enumerateDevices error:", err));
-  }
+    get cameraOn(): boolean {
+        return this.isCameraOn;
+    }
 
-  public triggerObservable(): Observable<void> {
-    return this.trigger.asObservable();
-  }
+    get audioOn(): boolean {
+        return this.isAudioOn;
+    }
 
-  public toggleWebcam(): void {
-    this.showWebcam = !this.showWebcam;
-  }
+    async ngAfterViewInit() {
+        await this.startLocalStream();
+        await this.setupPeerConnection();
+    }
 
-  public handleInitError(error: WebcamInitError): void {
-    this.errors.push(error);
-  }
+    private async startLocalStream() {
+        this.localStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+        });
+        this.localVideo.nativeElement.srcObject = this.localStream;
+    }
 
-  public handleImage(webcamImage: WebcamImage): void {
-    this.webcamImage = webcamImage;
-    const ctx = this.canvas.nativeElement.getContext('2d');
-    if (ctx) {
-      const img = new Image();
-      img.onload = () => {
-        this.canvas.nativeElement.width = img.width;
-        this.canvas.nativeElement.height = img.height;
-        ctx.drawImage(img, 0, 0);
+    private async setupPeerConnection() {
+        this.localPeer = new RTCPeerConnection();
+        this.remotePeer = new RTCPeerConnection();
 
-        if (this.autoSaveAfterCapture) {
-          this.downloadImage();
+        this.localStream
+            .getTracks()
+            .forEach((track) =>
+                this.localPeer.addTrack(track, this.localStream),
+            );
+
+        this.remotePeer.ontrack = (event) => {
+            this.remoteVideo.nativeElement.srcObject = event.streams[0];
+        };
+
+        this.localPeer.onicecandidate = (event) => {
+            if (event.candidate) {
+                this.remotePeer.addIceCandidate(event.candidate);
+            }
+        };
+        this.remotePeer.onicecandidate = (event) => {
+            if (event.candidate) {
+                this.localPeer.addIceCandidate(event.candidate);
+            }
+        };
+
+        const offer = await this.localPeer.createOffer();
+        await this.localPeer.setLocalDescription(offer);
+        await this.remotePeer.setRemoteDescription(offer);
+
+        const answer = await this.remotePeer.createAnswer();
+        await this.remotePeer.setLocalDescription(answer);
+        await this.localPeer.setRemoteDescription(answer);
+    }
+
+    ngOnDestroy() {
+        this.localPeer?.close();
+        this.remotePeer?.close();
+        this.localStream?.getTracks().forEach((t) => t.stop());
+    }
+
+    toggleAudio() {
+        this.isAudioOn = !this.isAudioOn;
+        this.localStream
+            ?.getAudioTracks()
+            .forEach((track) => (track.enabled = this.isAudioOn));
+    }
+
+    async toggleCamera() {
+        if (this.isCameraOn) {
+            this.localStream.getVideoTracks().forEach((track) => track.stop());
+            this.isCameraOn = false;
+        } else {
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+            });
+            const videoTrack = newStream.getVideoTracks()[0];
+
+            const sender = this.localPeer
+                .getSenders()
+                .find((s) => s.track?.kind === "video");
+            if (sender) {
+                sender.replaceTrack(videoTrack);
+            }
+
+            const oldTrack = this.localStream.getVideoTracks()[0];
+            if (oldTrack) this.localStream.removeTrack(oldTrack);
+            this.localStream.addTrack(videoTrack);
+
+            this.localVideo.nativeElement.srcObject = this.localStream;
+            this.isCameraOn = true;
         }
-      };
-      img.src = webcamImage.imageAsDataUrl;
     }
-  }
-
-  public capture(): void {
-    this.trigger.next();
-  }
-
-  private dataURLToBlob(dataURL: string): Blob {
-    const [header, data] = dataURL.split(',');
-    const mimeMatch = header.match(/:(.*?);/);
-    const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-    const binary = atob(data);
-    const len = binary.length;
-    const u8 = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      u8[i] = binary.charCodeAt(i);
-    }
-    return new Blob([u8], { type: mime });
-  }
-
-  public downloadImage(): void {
-    if (!this.canvas || !this.canvas.nativeElement) { return; }
-
-    const dataURL = this.canvas.nativeElement.toDataURL('image/png');
-
-    const blob = this.dataURLToBlob(dataURL);
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // nombre seguro
-    a.href = url;
-    a.download = `foto-${timestamp}.png`;
-    a.click();
-
-    URL.revokeObjectURL(url);
-  }
 }

@@ -1,22 +1,13 @@
-<div class="callScreen">
-  <webcam
-    *ngIf="showWebcam"
-    [height]="height"
-    [width]="width"
-    [trigger]="triggerObservable()"
-    [videoOptions]="videoOptions"
-    (imageCapture)="handleImage($event)"
-    (initError)="handleInitError($event)">
-  </webcam>
+<div class="video-container">
+  <video #localVideo autoplay playsinline muted class="local-video"></video>
+  <video #remoteVideo autoplay playsinline class="remote-video"></video>
+</div>
 
-  <canvas #canvas></canvas>
-
-  <cameraButton (capture)="capture()"></cameraButton>
-
-  <button (click)="toggleWebcam()">
-    {{ showWebcam ? 'Apagar Cámara' : 'Encender Cámara' }}
+<div class="controls">
+  <button (click)="toggleAudio()">
+    {{ audioOn ? 'Mute Audio' : 'Unmute Audio' }}
   </button>
-    <button (click)="downloadImage()" [disabled]="!webcamImage">
-    Guardar Foto
+  <button (click)="toggleCamera()">
+    {{ cameraOn ? 'Apagar Cámara' : 'Encender Cámara' }}
   </button>
 </div>
