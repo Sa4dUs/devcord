@@ -1,17 +1,17 @@
 services:
   api-gateway:
     build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: ./api-gateway/Dockerfile
     ports:
-      - "3000:3000"
+      - 3000:3000
     volumes:
       - ./api-gateway/config:/app/config # Change this on deployment
     environment:
       - CARGO_ENV
-      - JWT_SECRET="justalongenoughkeyforhs256algorithm"
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
       - CORS_ORIGIN="localhost"
-      - CONFIG_PATH="/app/config/config.toml"
+      - CONFIG_PATH=/app/config/config.toml
     networks:
       - backend
 
@@ -20,12 +20,13 @@ services:
       context: ./
       dockerfile: ./auth-service/Dockerfile
     ports:
-      - "3001:3000"
+      - 3001:3000
     environment:
       - CARGO_ENV
-      - AUTH_DATABASE_URL=postgres://postgres:password@auth-db:5432/psqldb
+      - FLUVIO_ADDR=sc:9003
+      - AUTH_DATABASE_URL=postgres://postgres:password@auth-db:5432/authdb
       - CORS_ORIGIN="localhost"
-      - JWT_SECRET="justalongenoughkeyforhs256algorithm"
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
       - DB_MAX_CONNECTIONS=5
       - DB_POOL_TIMEOUT_SECS=10
       - RUST_LOG=info
@@ -38,20 +39,20 @@ services:
     environment: 
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: psqldb
+      POSTGRES_DB: authdb
     ports:
-      - "5432:5432"
+      - 5433:5432
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - authdata:/var/lib/postgresql/data
     networks:
       - backend
 
   call-service:
     build:
-      context: ./call-service
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: ./call-service/Dockerfile
     ports:
-      - "3002:3000"
+      - 3002:3000
     environment:
       - CARGO_ENV
     networks:
@@ -59,10 +60,10 @@ services:
 
   group-service:
     build:
-      context: ./group-service
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: ./group-service/Dockerfile
     ports:
-      - "3003:3000"
+      - 3003:3000
     environment:
       - CARGO_ENV
     networks:
@@ -70,10 +71,10 @@ services:
 
   message-service:
     build:
-      context: ./message-service
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: ./message-service/Dockerfile
     ports:
-      - "3004:3000"
+      - 3004:3000
     environment:
       - CARGO_ENV
     networks:
@@ -81,21 +82,28 @@ services:
 
   notification-service:
     build:
-      context: ./notification-service
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: ./notification-service/Dockerfile
     ports:
-      - "3005:3000"
+      - 3005:3000
     environment:
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
+      - CORS_ORIGIN="localhost"
+      - FLUVIO_ADDR=sc:9003
+      - USER_ANSWER_TOPIC=friendships-answer
+      - USER_RESQUEST_TOPIC=friendships-request
+      - SOCKET_ADDR=0.0.0.0:3000
+      - RUST_LOG=Info
       - CARGO_ENV
     networks:
       - backend
 
   presence-service:
     build:
-      context: ./presence-service
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: ./presence-service/Dockerfile
     ports:
-      - "3006:3000"
+      - 3006:3000
     environment:
       - CARGO_ENV
     networks:
@@ -106,10 +114,10 @@ services:
       context: ./
       dockerfile: ./user-service/Dockerfile
     ports:
-      - "3007:3000"
+      - 3007:3000
     environment:
       - CORS_ORIGIN=http://localhost:3000
-      - DATABASE_URL=postgres://postgres:password@user-db:5432/psqldb
+      - DATABASE_URL=postgres://postgres:password@user-db:5432/userdb
       - SOCKET_ADDR=0.0.0.0:3000
       - FLUVIO_ADDR=sc:9003
       - PRODUCER_TOPIC=user
@@ -128,11 +136,11 @@ services:
     environment: 
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: psqldb
+      POSTGRES_DB: userdb
     ports:
-      - "5432:5432"
+      - 5434:5432
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - userdata:/var/lib/postgresql/data
     networks:
       - backend
 
@@ -141,7 +149,7 @@ services:
     container_name: sc
     hostname: sc
     ports:
-      - "9103:9003"
+      - 9103:9003
     environment:
       - RUST_LOG=info
     command: "./fluvio-run sc --local /fluvio/metadata"
@@ -190,4 +198,5 @@ networks:
     driver: bridge
 
 volumes:
-  pgdata:
+  authdata:
+  userdata:
