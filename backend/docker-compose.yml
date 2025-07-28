@@ -66,6 +66,28 @@ services:
       - 3003:3000
     environment:
       - CARGO_ENV
+      - GROUP_DATABASE_URL=postgres://postgres:password@group-db:5432/psqldb
+      - CORS_ORIGIN=localhost
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
+      - DB_MAX_CONNECTIONS=5
+      - DB_POOL_TIMEOUT_SECS=10
+      - RUST_LOG=info
+    depends_on:
+      - group-db
+    networks:
+      - backend
+
+  group-db:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: psqldb
+    ports:
+      - "5432:5432"
+    volumes:
+      - groupdata:/var/lib/postgresql/data
     networks:
       - backend
 
@@ -233,3 +255,4 @@ volumes:
   authdata:
   userdata:
   messagedata:
+  groupdata:
