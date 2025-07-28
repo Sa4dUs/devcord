@@ -25,7 +25,7 @@ export class BubbleContainerBackground {
 
     @Output() backgroundSelected = new EventEmitter<string>();
 
-    imageChangedEvent: string = "";
+    imageChangedEvent: Event | null = null;
     croppedImage: string = "";
     showCropper = false;
 
@@ -41,11 +41,14 @@ export class BubbleContainerBackground {
         }
     }
 
-    fileChangeEvent(event: any): void {
+    fileChangeEvent(event: Event): void {
         this.imageChangedEvent = event;
         this.showCropper = true;
 
-        const file = event.target.files[0];
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        if (!file) return;
+
         const img = new Image();
         const reader = new FileReader();
 
@@ -78,13 +81,13 @@ export class BubbleContainerBackground {
         if (this.croppedImage) {
             this.backgroundSelected.emit(this.croppedImage);
             this.showCropper = false;
-            this.imageChangedEvent = "";
+            this.imageChangedEvent = null;
         }
     }
 
     cancelCrop() {
         this.showCropper = false;
-        this.imageChangedEvent = "";
+        this.imageChangedEvent = null;
         this.croppedImage = "";
     }
 
