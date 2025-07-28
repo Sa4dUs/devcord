@@ -21,6 +21,7 @@ use webrtc::{
     interceptor::registry::Registry,
     peer_connection::{
         RTCPeerConnection, configuration::RTCConfiguration,
+        peer_connection_state::RTCPeerConnectionState,
         sdp::session_description::RTCSessionDescription,
     },
     rtp_transceiver::rtp_codec::RTPCodecType::{Audio, Video},
@@ -180,6 +181,9 @@ async fn handle_ws(ws: WebSocket, state: Arc<AppState>, claims: Claims) {
     let pc = peer_connection.clone();
 
     peer_connection.on_negotiation_needed(Box::new(move || {
+        if pc.connection_state() != RTCPeerConnectionState::Connected {
+            return Box::pin(async move {});
+        }
         let mut ws_tx = ws_tx.clone();
         let pc = pc.clone();
 
