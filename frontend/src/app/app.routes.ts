@@ -9,7 +9,7 @@ import { FriendshipSentComponent } from './friendship-sent/friendship-sent.compo
 import { FriendshipFriendComponent } from './friendship-friend/friendship-friend.component';
 import { BlocksBlockComponent } from './blocks-block/blocks-block.component';
 import { BlocksUnblockComponent } from './blocks-unblock/blocks-unblock.component';
-
+import { UpdateUsernameComponent } from './update/update.component';
 
 
 
@@ -27,7 +27,7 @@ export const routes: Routes = [
   { path: 'friendship-friend', component: FriendshipFriendComponent},
   { path: 'blocks-block', component: BlocksBlockComponent},
   { path: 'blocks-unblock', component: BlocksUnblockComponent },
-
+  { path: 'update', component: UpdateUsernameComponent },
 
   { path: '', redirectTo: 'home', pathMatch: 'full' } 
 
