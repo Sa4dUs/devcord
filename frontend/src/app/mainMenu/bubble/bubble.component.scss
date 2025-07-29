@@ -7,11 +7,27 @@
   justify-content: center;
   align-items: center;
   user-select: none;
-  cursor: grab;
   position: absolute;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.2s ease;
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &.dragging {
+    animation: bounce-scale 0.25s ease-out;
+    z-index: 1000;
+  }
 }
 
-.bubble.colliding {
-  background-color: tomato;
+@keyframes bounce-scale {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
 }

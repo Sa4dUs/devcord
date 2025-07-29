@@ -32,6 +32,7 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
 
     @Output() positionChanged = new EventEmitter<{ x: number; y: number }>();
     @Output() dragStateChanged = new EventEmitter<boolean>();
+    @Output() clicked = new EventEmitter<void>();
 
     constructor(private el: ElementRef) {}
 
@@ -46,13 +47,21 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
         }
     }
 
+    onClick() {
+        if (!this.isDragging) {
+            this.clicked.emit();
+        }
+    }
+
     onDragStarted(event: CdkDragStart) {
         this.isDragging = true;
+        this.addDragAnimation();
         this.dragStateChanged.emit(true);
     }
 
     onDragEnded(event: CdkDragEnd) {
         this.isDragging = false;
+        this.removeDragAnimation();
         this.dragStateChanged.emit(false);
 
         const bubbleEl = this.el.nativeElement.querySelector(".bubble");
@@ -97,6 +106,20 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
             bubbleEl.style.left = `${this.x}px`;
             bubbleEl.style.top = `${this.y}px`;
             bubbleEl.style.transform = "";
+        }
+    }
+
+    private addDragAnimation() {
+        const el = this.el.nativeElement.querySelector(".bubble");
+        if (el) {
+            el.classList.add("dragging");
+        }
+    }
+
+    private removeDragAnimation() {
+        const el = this.el.nativeElement.querySelector(".bubble");
+        if (el) {
+            el.classList.remove("dragging");
         }
     }
 }

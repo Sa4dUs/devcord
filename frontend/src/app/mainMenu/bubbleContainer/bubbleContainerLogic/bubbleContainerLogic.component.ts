@@ -4,12 +4,13 @@ export interface BubbleData {
     isDragging: boolean;
     x: number;
     y: number;
+    prevX?: number;
+    prevY?: number;
 }
 
 export class BubbleContainerLogic {
     readonly bubbleSize = 100;
-    readonly maxIterations = 5;
-    readonly pushBackDistance = -5;
+    readonly maxIterations = 15;
 
     constructor(
         private boundaryWidth: number = 400,
@@ -33,10 +34,10 @@ export class BubbleContainerLogic {
 
     isColliding(a: DOMRect, b: DOMRect): boolean {
         return !(
-            a.right < b.left ||
-            a.left > b.right ||
-            a.bottom < b.top ||
-            a.top > b.bottom
+            a.right <= b.left ||
+            a.left >= b.right ||
+            a.bottom <= b.top ||
+            a.top >= b.bottom
         );
     }
 
@@ -59,105 +60,107 @@ export class BubbleContainerLogic {
     }
 
     checkCollisions(bubblesData: BubbleData[]) {
-        const maxIterations = 5;
-        const pushBackDistance = -5;
+        for (const b of bubblesData) {
+            b.prevX = b.x;
+            b.prevY = b.y;
+            b.isColliding = false;
+        }
 
-        bubblesData.forEach((b) => (b.isColliding = false));
-
-        for (let iter = 0; iter < maxIterations; iter++) {
+        for (let iter = 0; iter < this.maxIterations; iter++) {
             const bubbleRects = this.updateRects(bubblesData);
             let anyCollision = false;
 
-            for (let i = 0; i < bubbleRects.length; i++) {
-                for (let j = i + 1; j < bubbleRects.length; j++) {
-                    const a = bubbleRects[i];
-                    const b = bubbleRects[j];
+            for (let i = 0; i < bubblesData.length; i++) {
+                for (let j = i + 1; j < bubblesData.length; j++) {
+                    const rectA = bubbleRects[i];
+                    const rectB = bubbleRects[j];
 
-                    if (this.isColliding(a, b)) {
+                    if (this.isColliding(rectA, rectB)) {
                         anyCollision = true;
+                        const bubbleA = bubblesData[i];
+                        const bubbleB = bubblesData[j];
 
-                        bubblesData[i].isColliding = true;
-                        bubblesData[j].isColliding = true;
+                        bubbleA.isColliding = true;
+                        bubbleB.isColliding = true;
 
-                        const dx =
-                            a.left + a.width / 2 - (b.left + b.width / 2);
-                        const dy =
-                            a.top + a.height / 2 - (b.top + b.height / 2);
-                        const magnitude = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const centerAX = rectA.left + this.bubbleSize / 2;
+                        const centerAY = rectA.top + this.bubbleSize / 2;
+                        const centerBX = rectB.left + this.bubbleSize / 2;
+                        const centerBY = rectB.top + this.bubbleSize / 2;
 
-                        const offsetX = (dx / magnitude) * pushBackDistance;
-                        const offsetY = (dy / magnitude) * pushBackDistance;
+                        const dx = centerBX - centerAX;
+                        const dy = centerBY - centerAY;
+                        const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+
+                        const minDistance = this.bubbleSize;
+                        const overlap = minDistance - distance;
+
+                        const nx = dx / distance;
+                        const ny = dy / distance;
+
+                        const moveA = bubbleA.isDragging ? 0 : 1;
+                        const moveB = bubbleB.isDragging ? 0 : 1;
+                        const totalMove = moveA + moveB || 1;
+
+                        const offsetAX = -nx * (overlap * (moveA / totalMove));
+                        const offsetAY = -ny * (overlap * (moveA / totalMove));
+                        const offsetBX = nx * (overlap * (moveB / totalMove));
+                        const offsetBY = ny * (overlap * (moveB / totalMove));
 
                         const canMove = (
                             b: BubbleData,
-                            offsetX: number,
-                            offsetY: number,
+                            dx: number,
+                            dy: number,
                         ) => {
-                            const newPos = this.clampPosition(
-                                b.x + offsetX,
-                                b.y + offsetY,
+                            const clamped = this.clampPosition(
+                                b.x + dx,
+                                b.y + dy,
                             );
-                            return newPos.x !== b.x || newPos.y !== b.y;
+                            return clamped.x !== b.x || clamped.y !== b.y;
                         };
 
-                        const moveBubble = (
+                        const move = (
                             b: BubbleData,
-                            offsetX: number,
-                            offsetY: number,
+                            dx: number,
+                            dy: number,
                         ) => {
-                            const newPos = this.clampPosition(
-                                b.x + offsetX,
-                                b.y + offsetY,
+                            const clamped = this.clampPosition(
+                                b.x + dx,
+                                b.y + dy,
                             );
-                            b.x = newPos.x;
-                            b.y = newPos.y;
+                            b.x = clamped.x;
+                            b.y = clamped.y;
                         };
 
-                        const aCanMove = canMove(
-                            bubblesData[i],
-                            -offsetX,
-                            -offsetY,
-                        );
-                        const bCanMove = canMove(
-                            bubblesData[j],
-                            offsetX,
-                            offsetY,
-                        );
+                        const aCanMove = canMove(bubbleA, offsetAX, offsetAY);
+                        const bCanMove = canMove(bubbleB, offsetBX, offsetBY);
 
-                        if (
-                            bubblesData[i].isDragging &&
-                            !bubblesData[j].isDragging
-                        ) {
-                            if (bCanMove) {
-                                moveBubble(bubblesData[j], offsetX, offsetY);
-                            } else {
-                                moveBubble(bubblesData[i], -offsetX, -offsetY);
-                            }
-                        } else if (
-                            !bubblesData[i].isDragging &&
-                            bubblesData[j].isDragging
-                        ) {
-                            if (aCanMove) {
-                                moveBubble(bubblesData[i], -offsetX, -offsetY);
-                            } else {
-                                moveBubble(bubblesData[j], offsetX, offsetY);
-                            }
-                        } else if (
-                            !bubblesData[i].isDragging &&
-                            !bubblesData[j].isDragging
-                        ) {
-                            if (aCanMove)
-                                moveBubble(
-                                    bubblesData[i],
-                                    -offsetX / 2,
-                                    -offsetY / 2,
-                                );
-                            if (bCanMove)
-                                moveBubble(
-                                    bubblesData[j],
-                                    offsetX / 2,
-                                    offsetY / 2,
-                                );
+                        if (aCanMove) move(bubbleA, offsetAX, offsetAY);
+                        if (bCanMove) move(bubbleB, offsetBX, offsetBY);
+
+                        // Si ninguna puede moverse, aplicar corrección mínima
+                        if (!aCanMove && !bCanMove) {
+                            const correction = 1;
+                            const fallbackAX = -nx * correction;
+                            const fallbackAY = -ny * correction;
+                            const fallbackBX = nx * correction;
+                            const fallbackBY = ny * correction;
+
+                            const fallbackACanMove = canMove(
+                                bubbleA,
+                                fallbackAX,
+                                fallbackAY,
+                            );
+                            const fallbackBCanMove = canMove(
+                                bubbleB,
+                                fallbackBX,
+                                fallbackBY,
+                            );
+
+                            if (fallbackACanMove)
+                                move(bubbleA, fallbackAX, fallbackAY);
+                            if (fallbackBCanMove)
+                                move(bubbleB, fallbackBX, fallbackBY);
                         }
                     }
                 }
