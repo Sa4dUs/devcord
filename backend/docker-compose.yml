@@ -30,6 +30,9 @@ services:
       - DB_MAX_CONNECTIONS=5
       - DB_POOL_TIMEOUT_SECS=10
       - RUST_LOG=info
+    depends_on:
+      - auth-db
+      - sc
     networks:
       - backend
 
@@ -66,7 +69,7 @@ services:
       - 3003:3000
     environment:
       - CARGO_ENV
-      - GROUP_DATABASE_URL=postgres://postgres:password@group-db:5432/psqldb
+      - GROUP_DATABASE_URL=postgres://postgres:password@group-db:5432/groupdb
       - CORS_ORIGIN=localhost
       - JWT_SECRET=justalongenoughkeyforhs256algorithm
       - DB_MAX_CONNECTIONS=5
@@ -83,11 +86,12 @@ services:
     environment: 
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: psqldb
+      POSTGRES_DB: groupdb
     ports:
-      - "5432:5432"
+      - 5435:5432
     volumes:
       - groupdata:/var/lib/postgresql/data
+      - ./group-service/migrations/01_setup_schema.sql:/docker-entrypoint-initdb.d/01_setup_schema.sql:ro
     networks:
       - backend
 
