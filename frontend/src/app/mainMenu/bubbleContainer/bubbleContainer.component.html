@@ -23,12 +23,9 @@
 
 <div class="actions">
   <button (click)="addBubble()">Añadir burbuja</button>
-  <button (click)="openFileSelector()">Elegir imagen de fondo</button>
 </div>
 
 <bubbleContainerBackground
   #bgManager
-  [boundaryWidth]="boundaryWidth"
-  [boundaryHeight]="boundaryHeight"
   (backgroundSelected)="onBackgroundSelected($event)"
 ></bubbleContainerBackground>

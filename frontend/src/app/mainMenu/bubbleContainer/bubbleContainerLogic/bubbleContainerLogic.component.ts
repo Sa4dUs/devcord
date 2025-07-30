@@ -13,8 +13,8 @@ export class BubbleContainerLogic {
     readonly maxIterations = 15;
 
     constructor(
-        private boundaryWidth: number = 400,
-        private boundaryHeight: number = 400,
+        private boundaryWidth: number = 800,
+        private boundaryHeight: number = 800,
     ) {}
 
     setBoundary(width: number, height: number) {
