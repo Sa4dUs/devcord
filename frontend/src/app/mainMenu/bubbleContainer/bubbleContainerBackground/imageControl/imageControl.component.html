@@ -1,0 +1,27 @@
+<div class="control-container" [style.width]="imageWidth() + 'px'">
+  <div class="image-container">
+    <img
+      [src]="imageSource()"
+      [width]="imageWidth()"
+      [height]="imageHeight()"
+      class="mat-elevation-z5"
+      [style.opacity]="uploading() ? 0.5 : 1"
+    />
+    <mat-progress-spinner
+      [diameter]="50"
+      mode="indeterminate"
+      *ngIf="uploading()"
+    ></mat-progress-spinner>
+  </div>
+
+  <input
+    #inputField
+    hidden
+    type="file"
+    (change)="fileSelected($event)"
+    (click)="inputField.value = ''"
+  />
+  <button mat-raised-button (click)="inputField.click()">
+    Select Photo
+  </button>
+</div>

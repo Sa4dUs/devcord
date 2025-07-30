@@ -1,3 +1,4 @@
+/* global localStorage */
 import {
     Component,
     EventEmitter,
@@ -15,9 +16,10 @@ import { MatButtonModule } from "@angular/material/button";
 import {
     CropperDialogComponent,
     CropperDialogResult,
-} from "../cropperDialog/cropperDialog.component";
+} from "./cropperDialog/cropperDialog.component";
 import { filter } from "rxjs/operators";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { HEIGHT, WIDTH } from "../../../mainMenuConstants";
 
 @Component({
     selector: "app-image-control",
@@ -28,69 +30,16 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
         MatButtonModule,
         MatProgressSpinnerModule,
     ],
-    template: `
-        <div class="control-container" [style.width]="imageWidth() + 'px'">
-            <div class="image-container">
-                <img
-                    [src]="imageSource()"
-                    [width]="imageWidth()"
-                    [height]="imageHeight()"
-                    class="mat-elevation-z5"
-                    [style.opacity]="uploading() ? 0.5 : 1"
-                />
-                <mat-progress-spinner
-                    [diameter]="50"
-                    mode="indeterminate"
-                    *ngIf="uploading()"
-                />
-            </div>
-
-            <input
-                #inputField
-                hidden
-                type="file"
-                (change)="fileSelected($event)"
-                (click)="inputField.value = ''"
-            />
-            <button mat-raised-button (click)="inputField.click()">
-                Select Photo
-            </button>
-        </div>
-    `,
-    styles: [
-        `
-            .control-container {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-                position: relative;
-            }
-
-            .image-container {
-                border-radius: 5px;
-                position: relative;
-
-                > mat-progress-spinner {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                }
-
-                > img {
-                    border-radius: inherit;
-                }
-            }
-        `,
-    ],
+    templateUrl: "imageControl.component.html",
+    styleUrl: "imageControl.component.scss",
 })
 export class ImageControlComponent {
-    imageWidth = signal(0);
+    imageWidth = signal(WIDTH);
     @Input({ required: true }) set width(val: number) {
         this.imageWidth.set(val);
     }
 
-    imageHeight = signal(0);
+    imageHeight = signal(HEIGHT);
     @Input({ required: true }) set height(val: number) {
         this.imageHeight.set(val);
     }
@@ -105,7 +54,7 @@ export class ImageControlComponent {
     }
 
     placeholder = computed(
-        () => `https://placehold.co/${this.imageWidth()}X${this.imageHeight()}`,
+        () => `https://placehold.co/${this.imageWidth()}x${this.imageHeight()}`,
     );
 
     croppedImageURL = signal<string | undefined>(undefined);
@@ -129,8 +78,9 @@ export class ImageControlComponent {
         });
     }
 
-    fileSelected(event: any) {
-        const file = event.target?.files[0];
+    fileSelected(event: Event) {
+        const input = event.target as HTMLInputElement;
+        const file = input?.files?.[0];
         if (file) {
             const dialogRef = this.dialog.open(CropperDialogComponent, {
                 data: {

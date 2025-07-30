@@ -1,3 +1,5 @@
+import { HEIGHT, WIDTH, BUBBLESIZE } from "../../mainMenuConstants";
+
 export interface BubbleData {
     id: number;
     isColliding: boolean;
@@ -9,22 +11,13 @@ export interface BubbleData {
 }
 
 export class BubbleContainerLogic {
-    readonly bubbleSize = 100;
     readonly maxIterations = 15;
 
-    constructor(
-        private boundaryWidth: number = 800,
-        private boundaryHeight: number = 800,
-    ) {}
-
-    setBoundary(width: number, height: number) {
-        this.boundaryWidth = width;
-        this.boundaryHeight = height;
-    }
+    constructor() {}
 
     clampPosition(x: number, y: number) {
-        const maxX = this.boundaryWidth - this.bubbleSize;
-        const maxY = this.boundaryHeight - this.bubbleSize;
+        const maxX = WIDTH - BUBBLESIZE;
+        const maxY = HEIGHT - BUBBLESIZE;
 
         return {
             x: Math.min(Math.max(x, 0), maxX),
@@ -45,12 +38,12 @@ export class BubbleContainerLogic {
         return {
             x,
             y,
-            width: this.bubbleSize,
-            height: this.bubbleSize,
+            width: BUBBLESIZE,
+            height: BUBBLESIZE,
             left: x,
             top: y,
-            right: x + this.bubbleSize,
-            bottom: y + this.bubbleSize,
+            right: x + BUBBLESIZE,
+            bottom: y + BUBBLESIZE,
             toJSON: () => ({}),
         } as DOMRect;
     }
@@ -83,16 +76,16 @@ export class BubbleContainerLogic {
                         bubbleA.isColliding = true;
                         bubbleB.isColliding = true;
 
-                        const centerAX = rectA.left + this.bubbleSize / 2;
-                        const centerAY = rectA.top + this.bubbleSize / 2;
-                        const centerBX = rectB.left + this.bubbleSize / 2;
-                        const centerBY = rectB.top + this.bubbleSize / 2;
+                        const centerAX = rectA.left + BUBBLESIZE / 2;
+                        const centerAY = rectA.top + BUBBLESIZE / 2;
+                        const centerBX = rectB.left + BUBBLESIZE / 2;
+                        const centerBY = rectB.top + BUBBLESIZE / 2;
 
                         const dx = centerBX - centerAX;
                         const dy = centerBY - centerAY;
                         const distance = Math.sqrt(dx * dx + dy * dy) || 1;
 
-                        const minDistance = this.bubbleSize;
+                        const minDistance = BUBBLESIZE;
                         const overlap = minDistance - distance;
 
                         const nx = dx / distance;
@@ -138,7 +131,6 @@ export class BubbleContainerLogic {
                         if (aCanMove) move(bubbleA, offsetAX, offsetAY);
                         if (bCanMove) move(bubbleB, offsetBX, offsetBY);
 
-                        // Si ninguna puede moverse, aplicar corrección mínima
                         if (!aCanMove && !bCanMove) {
                             const correction = 1;
                             const fallbackAX = -nx * correction;

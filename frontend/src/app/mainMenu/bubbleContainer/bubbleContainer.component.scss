@@ -1,45 +1,10 @@
 .example-boundary {
-  width: 600px;
-  height: 400px;
+  width: var(--width);
+  height: var(--height);
   max-width: 100%;
   border: 2px dotted gray;
   position: relative;
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
-}
-
-.cropper-container {
-  position: relative;
-  border: 2px dashed #666;
-  margin: 20px auto;
-}
-
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.modal-buttons {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
 }

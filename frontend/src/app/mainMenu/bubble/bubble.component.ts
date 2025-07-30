@@ -14,6 +14,7 @@ import {
     CdkDrag,
     CdkDragMove,
 } from "@angular/cdk/drag-drop";
+import { BUBBLESIZE } from "../mainMenuConstants";
 
 @Component({
     selector: "bubble",
@@ -34,11 +35,14 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
     @Output() dragStateChanged = new EventEmitter<boolean>();
     @Output() clicked = new EventEmitter<void>();
 
+    bubblesize = BUBBLESIZE;
+
     constructor(private el: ElementRef) {}
 
     ngAfterViewInit() {
         this.setPosition();
         this.emitPosition();
+        this.setBubbleSizeVariable();
     }
 
     ngOnChanges(changes: SimpleChanges) {
@@ -52,13 +56,13 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
             this.clicked.emit();
         }
     }
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onDragStarted(event: CdkDragStart) {
         this.isDragging = true;
         this.addDragAnimation();
         this.dragStateChanged.emit(true);
     }
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onDragEnded(event: CdkDragEnd) {
         this.isDragging = false;
         this.removeDragAnimation();
@@ -120,6 +124,12 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
         const el = this.el.nativeElement.querySelector(".bubble");
         if (el) {
             el.classList.remove("dragging");
+        }
+    }
+    setBubbleSizeVariable() {
+        const el = this.el.nativeElement.querySelector(".bubble");
+        if (el) {
+            el.style.setProperty("--bubblesize", this.bubblesize.toString());
         }
     }
 }
