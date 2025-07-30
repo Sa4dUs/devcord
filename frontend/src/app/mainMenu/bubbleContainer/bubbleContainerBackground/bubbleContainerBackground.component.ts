@@ -3,11 +3,10 @@ import { CommonModule } from "@angular/common";
 import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { MatButtonModule } from "@angular/material/button";
 import { filter } from "rxjs/operators";
-import { from } from "rxjs";
 import {
     CropperDialogComponent,
     CropperDialogResult,
-} from "./cropModal/cropperDialog/cropperDialog.component";
+} from "./imageControl/cropperDialog/cropperDialog.component";
 
 @Component({
     selector: "bubbleContainerBackground",

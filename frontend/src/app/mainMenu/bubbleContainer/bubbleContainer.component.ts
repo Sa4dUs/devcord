@@ -13,6 +13,7 @@ import {
     BubbleData,
 } from "./bubbleContainerLogic/bubbleContainerLogic.component";
 import { BubbleContainerBackground } from "./bubbleContainerBackground/bubbleContainerBackground.component";
+import { WIDTH, HEIGHT, BUBBLESIZE } from "../mainMenuConstants";
 
 @Component({
     selector: "bubbleContainer",
@@ -29,8 +30,8 @@ export class BubbleContainer implements AfterViewInit {
 
     boundaryRect!: DOMRect;
 
-    boundaryWidth = 400;
-    boundaryHeight = 400;
+    width = WIDTH;
+    height = HEIGHT;
 
     backgroundStyle: string = "";
 
@@ -46,20 +47,19 @@ export class BubbleContainer implements AfterViewInit {
     ];
 
     bubbleRects: DOMRect[] = [];
-
     logic = new BubbleContainerLogic();
 
     constructor(private host: ElementRef) {}
 
     ngAfterViewInit() {
-        const boundaryEl = this.host.nativeElement.querySelector(
-            this.boundarySelector,
-        );
-        if (boundaryEl) {
-            this.boundaryRect = boundaryEl.getBoundingClientRect();
-            this.boundaryWidth = this.boundaryRect.width;
-            this.boundaryHeight = this.boundaryRect.height;
-            this.logic.setBoundary(this.boundaryWidth, this.boundaryHeight);
+        this.setCssVariables();
+    }
+
+    setCssVariables() {
+        const el = this.host.nativeElement.querySelector(this.boundarySelector);
+        if (el) {
+            el.style.setProperty("--width", this.width + "px");
+            el.style.setProperty("--height", this.height + "px");
         }
     }
 
@@ -100,9 +100,12 @@ export class BubbleContainer implements AfterViewInit {
         const maxAttempts = 100;
 
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            const x = Math.random() * ((this.boundaryRect?.width || 400) - 100);
+            const x =
+                Math.random() *
+                ((this.boundaryRect?.width || this.width) - BUBBLESIZE);
             const y =
-                Math.random() * ((this.boundaryRect?.height || 400) - 100);
+                Math.random() *
+                ((this.boundaryRect?.height || this.height) - BUBBLESIZE);
 
             const fakeRect = this.logic.generateRect(x, y);
             const collision = this.bubbleRects.some((r) =>

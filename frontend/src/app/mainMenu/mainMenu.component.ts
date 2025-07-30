@@ -1,5 +1,4 @@
 import { Component } from "@angular/core";
-import { BubbleComponent } from "./bubble/bubble.component";
 import { BubbleContainer } from "./bubbleContainer/bubbleContainer.component";
 
 @Component({
