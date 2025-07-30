@@ -8,6 +8,7 @@ import {
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ImageCropperComponent, ImageCroppedEvent } from "ngx-image-cropper";
+import {MatToolbarModule } from "@angular/material/toolBar"
 
 @Component({
     selector: "bubbleContainerBackground",
