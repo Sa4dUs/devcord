@@ -16,17 +16,14 @@
   </label>
 </div>
 
-<div
-  *ngIf="showCropper"
-  class="cropper-container"
-  [style.width.px]="originalImageWidth"
-  [style.height.px]="originalImageHeight"
->
-  <mat-toolbar color ="Primary">
-    Angular Image Cropper
-  </mat-toolbar>
-  
-  <div class = "container">
+    <button mat-raised-button (click)="fileInput.click()">
+      Select Background Image
+    </button>
 
-  </div>
-</div>
+    <input
+      #fileInput
+      type="file"
+      accept="image/*"
+      style="display:none"
+      (change)="fileChangeEvent($event)"
+    />

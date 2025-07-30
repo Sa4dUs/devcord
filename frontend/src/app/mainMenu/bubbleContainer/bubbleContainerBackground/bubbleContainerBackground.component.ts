@@ -1,97 +1,61 @@
-import {
-    Component,
-    ElementRef,
-    ViewChild,
-    Input,
-    Output,
-    EventEmitter,
-} from "@angular/core";
+import { Component, EventEmitter, Output, inject, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { ImageCropperComponent, ImageCroppedEvent } from "ngx-image-cropper";
-import {MatToolbarModule } from "@angular/material/toolBar"
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { MatButtonModule } from "@angular/material/button";
+import { filter } from "rxjs/operators";
+import { from } from "rxjs";
+import {
+    CropperDialogComponent,
+    CropperDialogResult,
+} from "./cropModal/cropperDialog/cropperDialog.component";
 
 @Component({
     selector: "bubbleContainerBackground",
     standalone: true,
-    imports: [CommonModule, ImageCropperComponent],
-    templateUrl: "./bubbleContainerBackground.component.html",
-    styleUrls: ["./bubbleContainerBackground.component.scss"],
+    imports: [CommonModule, MatDialogModule, MatButtonModule],
+    templateUrl: "bubbleContainerBackground.component.html",
+    styles: [
+        `
+            button {
+                margin-bottom: 16px;
+            }
+        `,
+    ],
 })
 export class BubbleContainerBackground {
-    @Input() boundarySelector = ".example-boundary";
-    @ViewChild("fileInput") fileInput!: ElementRef<HTMLInputElement>;
+    dialog = inject(MatDialog);
 
-    @Input() boundaryWidth: number = 400;
-    @Input() boundaryHeight: number = 400;
+    croppedImage = signal<string | undefined>(undefined);
 
     @Output() backgroundSelected = new EventEmitter<string>();
 
-    imageChangedEvent: Event | null = null;
-    croppedImage: string = "";
-    showCropper = false;
-
-    originalImageWidth = 0;
-    originalImageHeight = 0;
-
-    backgroundStyle = "";
-
-    openFileSelector() {
-        if (this.fileInput) {
-            this.fileInput.nativeElement.value = "";
-            this.fileInput.nativeElement.click();
-        }
-    }
-
-    fileChangeEvent(event: Event): void {
-        this.imageChangedEvent = event;
-        this.showCropper = true;
-
+    fileChangeEvent(event: Event) {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0];
         if (!file) return;
 
-        const img = new Image();
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-            img.onload = () => {
-                this.originalImageWidth = img.width;
-                this.originalImageHeight = img.height;
-            };
-            img.src = e.target?.result as string;
-        };
-
-        reader.readAsDataURL(file);
+        this.openCropperDialog(file, 400, 400);
     }
 
-    imageCropped(event: ImageCroppedEvent) {
-        if (event.base64) {
-            this.croppedImage = event.base64;
-        } else if (event.blob) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                this.croppedImage = reader.result as string;
-            };
-            reader.readAsDataURL(event.blob);
-        } else {
-            this.croppedImage = "";
-        }
-    }
+    openCropperDialog(file: File, width: number, height: number) {
+        const dialogRef = this.dialog.open(CropperDialogComponent, {
+            data: { image: file, width, height },
+            width: "500px",
+        });
 
-    applyCrop() {
-        if (this.croppedImage) {
-            this.backgroundSelected.emit(this.croppedImage);
-            this.showCropper = false;
-            this.imageChangedEvent = null;
-        }
+        dialogRef
+            .afterClosed()
+            .pipe(filter((result): result is CropperDialogResult => !!result))
+            .subscribe((result) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64data = reader.result as string;
+                    this.croppedImage.set(base64data);
+                    this.backgroundSelected.emit(base64data);
+                };
+                reader.readAsDataURL(result.blob);
+            });
     }
-
-    cancelCrop() {
-        this.showCropper = false;
-        this.imageChangedEvent = null;
-        this.croppedImage = "";
-    }
-
     removeBackground() {
         this.backgroundSelected.emit("");
     }

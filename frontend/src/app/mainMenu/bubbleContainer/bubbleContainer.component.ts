@@ -123,10 +123,6 @@ export class BubbleContainer implements AfterViewInit {
         }
     }
 
-    openFileSelector() {
-        this.bgManager.openFileSelector();
-    }
-
     trackById(index: number, item: { id: number }) {
         return item.id;
     }
