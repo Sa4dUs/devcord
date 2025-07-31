@@ -97,6 +97,9 @@ services:
       - CARGO_ENV
     networks:
       - backend
+    depends_on:
+        - sc
+        - spu
 
   presence-service:
     build:
