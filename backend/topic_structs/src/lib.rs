@@ -41,3 +41,39 @@ pub struct MessageSent {
     pub sender: String,
     pub message: String,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct GroupCreatedEvent {
+    pub group_id: String,
+    pub owner_id: String,
+    pub channel_id: String,
+    pub member_ids: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct GroupDeletedEvent {
+    pub group_id: String,
+    pub owner_id: String,
+    pub member_ids: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct GroupUserAddedEvent {
+    pub group_id: String,
+    pub user_id: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct GroupUserRemovedEvent {
+    pub group_id: String,
+    pub user_id: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type")]
+pub enum GroupEvent {
+    GroupCreatedEvent(GroupCreatedEvent),
+    GroupDeletedEvent(GroupDeletedEvent),
+    GroupUserAddedEvent(GroupUserAddedEvent),
+    GroupUserRemovedEvent(GroupUserRemovedEvent),
+}

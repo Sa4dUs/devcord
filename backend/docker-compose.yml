@@ -75,8 +75,12 @@ services:
       - DB_MAX_CONNECTIONS=5
       - DB_POOL_TIMEOUT_SECS=10
       - RUST_LOG=info
+      - FLUVIO_ADDR=sc:9003
+      - PRODUCER_TOPIC=group-events
     depends_on:
       - group-db
+      - sc
+      - spu
     networks:
       - backend
 
@@ -147,6 +151,7 @@ services:
       - USER_ANSWER_TOPIC=friendships-answer
       - USER_RESQUEST_TOPIC=friendships-request
       - MESSAGE_EVENTS_TOPIC=message-events
+      - GROUP_EVENTS_TOPIC=group-events
       - SOCKET_ADDR=0.0.0.0:3000
       - RUST_LOG=Info
       - CARGO_ENV

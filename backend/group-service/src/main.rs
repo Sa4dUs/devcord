@@ -1,11 +1,13 @@
-use group_service::{app, config};
+use group_service::{app, config, state::AppState};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenv::dotenv().ok();
     tracing_subscriber::fmt::init();
 
-    let state = config::init_db().await?;
+    let db = config::init_db().await?;
+    let state = AppState::new(db).await?;
+
     let app = app::build(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
