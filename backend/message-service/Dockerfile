@@ -4,6 +4,7 @@ WORKDIR /usr/src/app
 
 COPY ./message-service/Cargo.toml ./message-service/Cargo.lock ./
 COPY ./message-service/src ./src
+COPY topic_structs ../topic_structs
 
 ARG BUILD_MODE=release
 
