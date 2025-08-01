@@ -1,6 +1,6 @@
 use axum::{
     Extension,
-    extract::{Json, Query, State},
+    extract::{Json, Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -278,4 +278,59 @@ pub async fn remove_user_from_group(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn get_group_members(
+    State(state): State<AppState>,
+    Extension(AuthUser { user_id }): Extension<AuthUser>,
+    axum::extract::Path(group_id): axum::extract::Path<Uuid>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let group_exists = sqlx::query_scalar::<_, Option<Uuid>>("SELECT id FROM groups WHERE id = $1")
+        .bind(group_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if group_exists.is_none() {
+        return Err(StatusCode::NOT_FOUND);
+    }
+
+    let is_member = sqlx::query_scalar::<_, Option<Uuid>>(
+        "SELECT user_id FROM group_members WHERE group_id = $1 AND user_id = $2",
+    )
+    .bind(group_id)
+    .bind(user_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if is_member.is_none() {
+        return Err(StatusCode::NOT_FOUND);
+    }
+
+    let members: Vec<Uuid> =
+        sqlx::query_scalar("SELECT user_id FROM group_members WHERE group_id = $1")
+            .bind(group_id)
+            .fetch_all(&state.db)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok((StatusCode::OK, Json(members)))
+}
+
+pub async fn get_group_id_by_channel(
+    State(state): State<AppState>,
+    Path(channel_id): Path<Uuid>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let group_id =
+        sqlx::query_scalar::<_, Option<Uuid>>("SELECT id FROM groups WHERE channel_id = $1")
+            .bind(channel_id)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    match group_id {
+        Some(id) => Ok((StatusCode::OK, Json(id))),
+        None => Err(StatusCode::NOT_FOUND),
+    }
 }

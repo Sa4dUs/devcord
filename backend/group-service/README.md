@@ -148,3 +148,55 @@
 -   All endpoints require a valid JWT in the `Authorization` header.
 -   All UUIDs must be valid.
 -   All error responses return a plain message or empty body, depending on the status
+
+---
+
+## 6. Get Group Members
+
+**GET** `/{group_id}/members`
+
+**Headers:**
+
+-   `Authorization: Bearer <JWT>`
+
+**Path Parameters:**
+
+-   `group_id` (UUID): The group to retrieve members from.
+
+**Responses:**
+
+-   `200 OK`
+
+    ```json
+    ["uuid-1", "uuid-2", "uuid-3"]
+    ```
+
+-   `401 Unauthorized` — If JWT is missing or invalid.
+-   `404 Not Found` — If group does not exist or requester is not a member.
+-   `500 Internal Server Error` — On database or server error.
+
+---
+
+## 7. Get Group ID by Channel ID
+
+**GET** `/by_channel/{channel_id}`
+
+**Headers:**
+
+-   `Authorization: Bearer <JWT>`
+
+**Path Parameters:**
+
+-   `channel_id` (UUID): The channel to retrieve the associated group ID from.
+
+**Responses:**
+
+-   `200 OK`
+
+    ```json
+    ["uuid-1", "uuid-2", "uuid-3"]
+    ```
+
+-   `401 Unauthorized` — If JWT is missing or invalid.
+-   `404 Not Found` — If no group is associated with the given channel ID.
+-   `500 Internal Server Error` — On database or server error.
