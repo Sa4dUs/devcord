@@ -18,7 +18,7 @@ impl AppState {
         let fluvio = fluvio::Fluvio::connect_with_config(&fluvio_config).await?;
 
         let producer_topic = var("PRODUCER_TOPIC")
-            .unwrap_or("group-events".to_owned())
+            .unwrap_or("message-events".to_owned())
             .trim()
             .to_string();
 

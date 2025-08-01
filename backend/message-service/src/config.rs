@@ -18,7 +18,11 @@ pub async fn init_db() -> anyhow::Result<PgPool> {
 
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS messages (
-    id UUID PRIMARY KEY
+    id UUID PRIMARY KEY,
+    sender_id UUID NOT NULL,
+    channel_id UUID NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT now()
 );
 ",
     )

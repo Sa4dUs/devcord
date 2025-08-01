@@ -38,6 +38,19 @@ pub async fn extract_channel(mut req: Request<Body>, next: Next) -> Result<Respo
     let body_bytes = axum::body::to_bytes(body, usize::MAX)
         .await
         .map_err(|_| ChannelError::MissingChannel)?;
+
+    // FIXME(Sa4dUs): Collapse these `if let` statements once `Dockerfile` runs rust 2024 edition
+    if let Some(path) = parts.uri.path().split('/').nth(1) {
+        if !path.is_empty() {
+            let channel = Channel {
+                id: path.to_string(),
+            };
+            let mut req = Request::from_parts(parts, Body::from(body_bytes));
+            req.extensions_mut().insert(channel);
+            return Ok(next.run(req).await);
+        }
+    }
+
     let maybe_json: Result<BodyChannelId, _> = serde_json::from_slice(&body_bytes);
 
     if let Ok(BodyChannelId {
@@ -46,10 +59,10 @@ pub async fn extract_channel(mut req: Request<Body>, next: Next) -> Result<Respo
     {
         let mut req = Request::from_parts(parts, Body::from(body_bytes));
         req.extensions_mut().insert(Channel { id });
-        Ok(next.run(req).await)
-    } else {
-        Err(ChannelError::MissingChannel)
+        return Ok(next.run(req).await);
     }
+
+    Err(ChannelError::MissingChannel)
 }
 
 #[allow(dead_code)]
