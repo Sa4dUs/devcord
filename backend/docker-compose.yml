@@ -77,6 +77,34 @@ services:
       - 3004:3000
     environment:
       - CARGO_ENV
+      - MESSAGE_DATABASE_URL=postgres://postgres:password@message-db:5432/messagedb
+      - CORS_ORIGIN=localhost
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
+      - DB_MAX_CONNECTIONS=5
+      - DB_POOL_TIMEOUT_SECS=10
+      - RUST_LOG=info
+      - FLUVIO_ADDR=sc:9003
+      - PRODUCER_TOPIC=message-events
+      - GROUP_SERVICE_URL=http://group-service:3000
+    depends_on:
+      - message-db
+      - sc
+      - spu
+    networks:
+      - backend
+
+  message-db:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: messagedb
+    ports:
+      - 5436:5432
+    volumes:
+      - messagedata:/var/lib/postgresql/data
+      - ./message-service/migrations/01_setup_schema.sql:/docker-entrypoint-initdb.d/01_setup_schema.sql:ro
     networks:
       - backend
 
@@ -92,6 +120,7 @@ services:
       - FLUVIO_ADDR=sc:9003
       - USER_ANSWER_TOPIC=friendships-answer
       - USER_RESQUEST_TOPIC=friendships-request
+      - MESSAGE_EVENTS_TOPIC=message-events
       - SOCKET_ADDR=0.0.0.0:3000
       - RUST_LOG=Info
       - CARGO_ENV
@@ -203,3 +232,4 @@ networks:
 volumes:
   authdata:
   userdata:
+  messagedata:
