@@ -1,0 +1,12 @@
+[services.example]
+instances = ["localhost:3001", "localhost:3002"]
+
+[[services.example.routes]]
+path = "/"
+allow_methods = ["GET"]
+protected = false
+
+[[services.example.routes]]
+path = "/protected"
+allow_methods = ["GET", "POST"]
+protected = true
