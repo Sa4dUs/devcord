@@ -9,14 +9,11 @@ use axum::{
     extract::{State, WebSocketUpgrade, ws::WebSocket},
     response::IntoResponse,
 };
-use fluvio::metadata::core::Status;
 use reqwest::{Client, StatusCode};
 use serde::Deserialize;
 use topic_structs::MessageSent;
 use uuid::Uuid;
 
-use crate::middleware::channel;
-use crate::models::group::{GroupIdResponse, GroupMembersResponse};
 use crate::models::message::MessageInfo;
 use crate::{
     middleware::{auth::Authenticated, channel::Channel},
@@ -81,6 +78,7 @@ async fn handle_messages(
         };
 
         for user_id in &members {
+            tracing::info!("notifying {user_id} of {event:?}");
             if let Err(e) = state
                 .producer
                 .send(user_id.to_string(), event_bytes.clone())
@@ -163,7 +161,6 @@ pub async fn fetch_messages(
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     };
 
-    tracing::info!("{} {:?}", claims.user_id, group_members);
     if !group_members.contains(&Uuid::parse_str(&claims.user_id).unwrap()) {
         return Err(StatusCode::NOT_FOUND);
     }

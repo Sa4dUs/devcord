@@ -120,6 +120,7 @@ services:
       - FLUVIO_ADDR=sc:9003
       - USER_ANSWER_TOPIC=friendships-answer
       - USER_RESQUEST_TOPIC=friendships-request
+      - MESSAGE_EVENTS_TOPIC=message-events
       - SOCKET_ADDR=0.0.0.0:3000
       - RUST_LOG=Info
       - CARGO_ENV
