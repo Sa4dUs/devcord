@@ -1,5 +1,5 @@
 use axum::{
-    Router, middleware,
+    Router,
     routing::{delete, get, post, put},
 };
 

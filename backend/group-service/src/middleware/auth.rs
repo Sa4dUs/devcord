@@ -12,7 +12,7 @@ use axum_extra::{
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use uuid::Uuid;
 
-use crate::models::claims::Claims;
+use crate::jwt::Claims;
 
 #[derive(Debug, Clone)]
 pub struct AuthUser {

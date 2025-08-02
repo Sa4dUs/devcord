@@ -5,6 +5,7 @@ use axum::{
     response::IntoResponse,
 };
 use serde::Deserialize;
+use sqlx::QueryBuilder;
 use uuid::Uuid;
 
 use crate::{
@@ -55,14 +56,18 @@ pub async fn create_group(
         .cloned()
         .collect();
 
-    for member_id in &member_ids {
-        sqlx::query("INSERT INTO group_members (group_id, user_id) VALUES ($1, $2)")
-            .bind(group_id)
-            .bind(member_id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    }
+    let mut query_builder = QueryBuilder::new("INSERT INTO group_members (group_id, user_id)");
+    query_builder.push_values(&member_ids, |mut b, member_id| {
+        b.push_bind(group_id).push_bind(member_id);
+    });
+
+    // Just in case the frontend sends the owner in `member_ids`, no problem with that
+    query_builder.push("ON CONFLICT DO NOTHING");
+
+    query_builder.build().execute(&mut *tx).await.map_err(|e| {
+        tracing::error!("{e:?}");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     tx.commit()
         .await
@@ -118,26 +123,20 @@ pub async fn add_users_to_group(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    let mut tx = state
-        .db
-        .begin()
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut query_builder = QueryBuilder::new("INSERT INTO group_members (group_id, user_id)");
+    query_builder.push_values(&payload.user_ids, |mut b, uid| {
+        b.push_bind(group_id).push_bind(uid);
+    });
+    query_builder.push("ON CONFLICT DO NOTHING");
 
-    for uid in &payload.user_ids {
-        sqlx::query(
-            "INSERT INTO group_members (group_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-        )
-        .bind(group_id)
-        .bind(uid)
-        .execute(&mut *tx)
+    query_builder
+        .build()
+        .execute(&state.db)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    }
-
-    tx.commit()
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| {
+            tracing::error!("{e:?}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     for user_id in payload.user_ids {
         let event = GroupEvent::GroupUserAddedEvent(GroupUserAddedEvent {

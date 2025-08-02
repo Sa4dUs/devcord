@@ -2,7 +2,6 @@ use group_service::{app, config, state::AppState};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    dotenv::dotenv().ok();
     tracing_subscriber::fmt::init();
 
     let db = config::init_db().await?;
