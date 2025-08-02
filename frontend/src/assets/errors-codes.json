@@ -1,0 +1,32 @@
+
+{
+    "register": {
+        "400": "Username or email already in use",
+        "401": "Invalid credentials"
+    },
+    "login": {
+        "401": "Invalid credentials"
+    },
+    "recieve-friendships":{
+        "404": "Request wasn't found"
+    },
+    "block":{
+        "404": "This user doesn't exists",
+        "409": "This user was already blocked"
+
+    },
+    "unblock":{
+        "404": "This user doesn't exists"
+    },
+    "friendship-request":{
+        "409": "Username not found"
+    },
+    "update":{
+        "400": "This username has already been taken or it's not valid",
+        "401": "You're not authorized, revise your token"
+    },
+
+    "default":{
+        "500": "Internal Server Error"
+    }
+}
