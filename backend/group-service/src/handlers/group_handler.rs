@@ -13,7 +13,7 @@ use crate::{
     state::AppState,
 };
 use topic_structs::{
-    GroupCreatedEvent, GroupDeletedEvent, GroupUserAddedEvent, GroupUserRemovedEvent,
+    GroupCreatedEvent, GroupDeletedEvent, GroupEvent, GroupUserAddedEvent, GroupUserRemovedEvent,
 };
 
 #[derive(Deserialize)]
@@ -68,12 +68,12 @@ pub async fn create_group(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let event = GroupCreatedEvent {
+    let event = GroupEvent::GroupCreatedEvent(GroupCreatedEvent {
         group_id: group_id.to_string(),
         owner_id: user_id.to_string(),
         channel_id: channel_id.to_string(),
         member_ids: member_ids.iter().map(|id| id.to_string()).collect(),
-    };
+    });
 
     let event_bytes = serde_json::to_vec(&event).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     state
@@ -83,10 +83,10 @@ pub async fn create_group(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     for member_id in member_ids {
-        let event = GroupUserAddedEvent {
+        let event = GroupEvent::GroupUserAddedEvent(GroupUserAddedEvent {
             group_id: group_id.to_string(),
             user_id: member_id.to_string(),
-        };
+        });
 
         let event_bytes =
             serde_json::to_vec(&event).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -95,6 +95,8 @@ pub async fn create_group(
             .send(member_id.to_string().as_str(), event_bytes)
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        tracing::debug!("FLUVIO\t{member_id:?} : {event:?}");
     }
 
     Ok((StatusCode::CREATED, Json(group_id)))
@@ -138,10 +140,10 @@ pub async fn add_users_to_group(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     for user_id in payload.user_ids {
-        let event = GroupUserAddedEvent {
+        let event = GroupEvent::GroupUserAddedEvent(GroupUserAddedEvent {
             group_id: group_id.to_string(),
             user_id: user_id.to_string(),
-        };
+        });
         let event_bytes =
             serde_json::to_vec(&event).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         state
@@ -184,11 +186,11 @@ pub async fn delete_group(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let event = GroupDeletedEvent {
+    let event = GroupEvent::GroupDeletedEvent(GroupDeletedEvent {
         group_id: group_id.to_string(),
         owner_id: user_id.to_string(),
         member_ids: member_ids.iter().map(|id| id.to_string()).collect(),
-    };
+    });
     let event_bytes = serde_json::to_vec(&event).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     state
         .producer
@@ -266,10 +268,10 @@ pub async fn remove_user_from_group(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let event = GroupUserRemovedEvent {
+    let event = GroupEvent::GroupUserRemovedEvent(GroupUserRemovedEvent {
         group_id: group_id.to_string(),
         user_id: payload.user_id.to_string(),
-    };
+    });
     let event_bytes = serde_json::to_vec(&event).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     state
         .producer

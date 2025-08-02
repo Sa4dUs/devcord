@@ -70,10 +70,14 @@ pub struct GroupUserRemovedEvent {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type")]
+#[serde(tag = "kind")]
 pub enum GroupEvent {
+    #[serde(rename = "group_created")]
     GroupCreatedEvent(GroupCreatedEvent),
+    #[serde(rename = "group_deleted")]
     GroupDeletedEvent(GroupDeletedEvent),
+    #[serde(rename = "group_user_added")]
     GroupUserAddedEvent(GroupUserAddedEvent),
+    #[serde(rename = "group_user_removed")]
     GroupUserRemovedEvent(GroupUserRemovedEvent),
 }
