@@ -2,7 +2,7 @@ import { Component, Inject, PLATFORM_ID, signal } from "@angular/core";
 import { isPlatformBrowser, CommonModule } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
-import { SERVER_ROUTE } from "../../../enviroment/enviroment.secret";
+import { SERVER_ROUTE } from "../../../environment/environment.secret";
 import { ErrorsHandling } from "../../errors/errors";
 
 const context = "update";
