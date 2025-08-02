@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 use axum::{
     Json, RequestPartsExt,
     extract::FromRequestParts,
-    http::{StatusCode, request::Parts},
+    http::{StatusCode, header, request::Parts},
     response::{IntoResponse, Response},
 };
 use axum_extra::{
@@ -33,28 +33,51 @@ impl Keys {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Claims {
-    pub(crate) exp: u64,
-    pub(crate) user_id: String,
+    pub exp: u64,
+    pub user_id: String,
 }
 
-impl<S> FromRequestParts<S> for Claims
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct Authenticated {
+    pub(crate) claims: Claims,
+    pub(crate) jwt: String,
+}
+
+impl<S> FromRequestParts<S> for Authenticated
 where
     S: Send + Sync,
 {
     type Rejection = AuthError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        // Extract the token from the authorization header
-        let TypedHeader(Authorization(bearer)) = parts
-            .extract::<TypedHeader<Authorization<Bearer>>>()
-            .await
-            .map_err(|_| AuthError::InvalidToken)?;
-        // Decode the user data
-        let token_data = decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
-            .map_err(|_| AuthError::InvalidToken)?;
+        if let Ok(TypedHeader(bearer)) = parts.extract::<TypedHeader<Authorization<Bearer>>>().await
+        {
+            let jwt = bearer.token().to_string();
+            let claims = decode_token(&jwt)?;
+            return Ok(Authenticated { claims, jwt });
+        }
 
-        Ok(token_data.claims)
+        // FIXME(Sa4dUs): Collapse these `if let` statements once `Dockerfile` runs rust 2024 edition
+        if let Some(protocol_header) = parts.headers.get(header::SEC_WEBSOCKET_PROTOCOL) {
+            if let Ok(protocols) = protocol_header.to_str() {
+                if let Some(jwt) = protocols.split(',').map(|s| s.trim()).next() {
+                    let claims = decode_token(jwt)?;
+                    return Ok(Authenticated {
+                        claims,
+                        jwt: jwt.to_string(),
+                    });
+                }
+            }
+        }
+
+        Err(AuthError::InvalidToken)
     }
+}
+
+fn decode_token(token: &str) -> Result<Claims, AuthError> {
+    decode::<Claims>(token, &KEYS.decoding, &Validation::default())
+        .map(|data| data.claims)
+        .map_err(|_| AuthError::InvalidToken)
 }
 
 //This should be a common crate for all services, dead code is allowed to preserve the common structure
