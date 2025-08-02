@@ -1,0 +1,1 @@
+export const SERVER_ROUTE = "YKS-HERMANO-FILETE-DE-POLLO";
