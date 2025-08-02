@@ -9,10 +9,17 @@ import prettierConfig from "eslint-config-prettier";
 
 export default [
     js.configs.recommended,
-
+    {
+        ignores: [
+            "node_modules/**",
+            "dist/**",
+            "build/**",
+            "**/*.html",
+            ".angular/**",
+        ],
+    },
     {
         files: ["**/*.ts"],
-        ignores: ["node_modules/**", "dist/**", "build/**", "**/*.html"],
         languageOptions: {
             parser: typescriptParser,
             parserOptions: {
@@ -29,6 +36,7 @@ export default [
                 window: "readonly",
                 document: "readonly",
                 global: "readonly",
+                localStorage: "readonly",
             },
         },
         plugins: {
@@ -58,7 +66,6 @@ export default [
 
     {
         files: ["**/*.html"],
-        ignores: ["node_modules/**", "dist/**"],
         languageOptions: {
             parser: angularTemplateParser,
         },
@@ -69,8 +76,7 @@ export default [
     },
 
     {
-        files: ["**/*.{js,ts,tsx,css,scss,md,yml,yaml,graphql,mdx}"],
-        ignores: ["node_modules/**", "dist/**", "build/**", "**/*.md"],
+        files: ["**/*.{js,ts,tsx,css,md,yml,yaml,graphql,mdx}"],
         plugins: {
             prettier: prettierPlugin,
         },
