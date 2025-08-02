@@ -1,0 +1,205 @@
+services:
+  api-gateway:
+    build:
+      context: ./
+      dockerfile: ./api-gateway/Dockerfile
+    ports:
+      - 3000:3000
+    volumes:
+      - ./api-gateway/config:/app/config # Change this on deployment
+    environment:
+      - CARGO_ENV
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
+      - CORS_ORIGIN="localhost"
+      - CONFIG_PATH=/app/config/config.toml
+    networks:
+      - backend
+
+  auth-service:
+    build:
+      context: ./
+      dockerfile: ./auth-service/Dockerfile
+    ports:
+      - 3001:3000
+    environment:
+      - CARGO_ENV
+      - FLUVIO_ADDR=sc:9003
+      - AUTH_DATABASE_URL=postgres://postgres:password@auth-db:5432/authdb
+      - CORS_ORIGIN="localhost"
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
+      - DB_MAX_CONNECTIONS=5
+      - DB_POOL_TIMEOUT_SECS=10
+      - RUST_LOG=info
+    networks:
+      - backend
+
+  auth-db:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: authdb
+    ports:
+      - 5433:5432
+    volumes:
+      - authdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  call-service:
+    build:
+      context: ./
+      dockerfile: ./call-service/Dockerfile
+    ports:
+      - 3002:3000
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  group-service:
+    build:
+      context: ./
+      dockerfile: ./group-service/Dockerfile
+    ports:
+      - 3003:3000
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  message-service:
+    build:
+      context: ./
+      dockerfile: ./message-service/Dockerfile
+    ports:
+      - 3004:3000
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  notification-service:
+    build:
+      context: ./
+      dockerfile: ./notification-service/Dockerfile
+    ports:
+      - 3005:3000
+    environment:
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
+      - CORS_ORIGIN="localhost"
+      - FLUVIO_ADDR=sc:9003
+      - USER_ANSWER_TOPIC=friendships-answer
+      - USER_RESQUEST_TOPIC=friendships-request
+      - SOCKET_ADDR=0.0.0.0:3000
+      - RUST_LOG=Info
+      - CARGO_ENV
+    networks:
+      - backend
+    depends_on:
+        - sc
+        - spu
+
+  presence-service:
+    build:
+      context: ./
+      dockerfile: ./presence-service/Dockerfile
+    ports:
+      - 3006:3000
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  user-service:
+    build:
+      context: ./
+      dockerfile: ./user-service/Dockerfile
+    ports:
+      - 3007:3000
+    environment:
+      - CORS_ORIGIN=http://localhost:3000
+      - DATABASE_URL=postgres://postgres:password@user-db:5432/userdb
+      - SOCKET_ADDR=0.0.0.0:3000
+      - FLUVIO_ADDR=sc:9003
+      - PRODUCER_TOPIC=user
+      - CONSUMER_TOPIC=auth
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
+      - CARGO_ENV
+    networks:
+      - backend
+    depends_on:
+      - sc
+      - spu
+  
+  user-db:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: userdb
+    ports:
+      - 5434:5432
+    volumes:
+      - userdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  sc:
+    image: infinyon/fluvio:stable
+    container_name: sc
+    hostname: sc
+    ports:
+      - 9103:9003
+    environment:
+      - RUST_LOG=info
+    command: "./fluvio-run sc --local /fluvio/metadata"
+    volumes:
+      - ./fluvio/fluvio-metadata:/fluvio/metadata
+    networks:
+      - backend
+
+  sc-setup:
+    build:
+      context: ./fluvio
+      dockerfile: Dockerfile
+    container_name: sc-setup
+    environment:
+      - RUST_LOG=info
+    entrypoint: >
+      /bin/sh -c "
+      fluvio profile add docker sc:9003 docker;
+      fluvio cluster spu register --id 5001 -p spu:9010 --private-server spu:9011;
+      exit 0;
+      "
+    depends_on:
+      - sc
+    networks:
+      - backend
+
+  spu:
+    image: infinyon/fluvio:stable
+    container_name: spu
+    hostname: spu
+    volumes:
+      - ./fluvio/fluvio-data:/fluvio/data
+    environment:
+      - RUST_LOG=info
+    ports:
+      - "9110:9010"
+      - "9111:9011"
+    command: "./fluvio-run spu -i 5001 -p spu:9010 -v spu:9011 --sc-addr sc:9004 --log-base-dir /fluvio/data"
+    depends_on:
+      - sc
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  authdata:
+  userdata:
