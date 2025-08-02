@@ -3,7 +3,7 @@ import { isPlatformBrowser, CommonModule } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
 import { signal } from "@angular/core";
-import { SERVER_ROUTE } from "../../../../enviroment/enviroment.secret";
+import { SERVER_ROUTE } from "../../../../environment/environment.secret";
 import { ErrorsHandling } from "../../../errors/errors";
 
 const context = "block";

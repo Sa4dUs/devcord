@@ -4,7 +4,7 @@ import { HttpClient } from "@angular/common/http";
 import { Router } from "@angular/router";
 import { RegisterResponseType } from "../../types/Auth";
 import { ErrorsHandling } from "../errors/errors";
-import { SERVER_ROUTE } from "../../enviroment/enviroment.secret";
+import { SERVER_ROUTE } from "../../environment/environment.secret";
 
 const context = "register";
 
