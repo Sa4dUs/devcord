@@ -1,7 +1,7 @@
 import { Component, Inject, PLATFORM_ID, signal } from "@angular/core";
 import { isPlatformBrowser, CommonModule } from "@angular/common";
 import { HttpClient, HttpParams } from "@angular/common/http";
-import { SERVER_ROUTE } from "../../../../enviroment/enviroment.secret";
+import { SERVER_ROUTE } from "../../../../environment/environment.secret";
 
 interface SentRequest {
     to_user_username: string;
