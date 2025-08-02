@@ -30,6 +30,9 @@ services:
       - DB_MAX_CONNECTIONS=5
       - DB_POOL_TIMEOUT_SECS=10
       - RUST_LOG=info
+    depends_on:
+      - auth-db
+      - sc
     networks:
       - backend
 
@@ -66,6 +69,33 @@ services:
       - 3003:3000
     environment:
       - CARGO_ENV
+      - GROUP_DATABASE_URL=postgres://postgres:password@group-db:5432/groupdb
+      - CORS_ORIGIN=localhost
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
+      - DB_MAX_CONNECTIONS=5
+      - DB_POOL_TIMEOUT_SECS=10
+      - RUST_LOG=info
+      - FLUVIO_ADDR=sc:9003
+      - PRODUCER_TOPIC=group-events
+    depends_on:
+      - group-db
+      - sc
+      - spu
+    networks:
+      - backend
+
+  group-db:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: groupdb
+    ports:
+      - 5435:5432
+    volumes:
+      - groupdata:/var/lib/postgresql/data
+      - ./group-service/migrations/01_setup_schema.sql:/docker-entrypoint-initdb.d/01_setup_schema.sql:ro
     networks:
       - backend
 
@@ -121,6 +151,7 @@ services:
       - USER_ANSWER_TOPIC=friendships-answer
       - USER_RESQUEST_TOPIC=friendships-request
       - MESSAGE_EVENTS_TOPIC=message-events
+      - GROUP_EVENTS_TOPIC=group-events
       - SOCKET_ADDR=0.0.0.0:3000
       - RUST_LOG=Info
       - CARGO_ENV
@@ -233,3 +264,4 @@ volumes:
   authdata:
   userdata:
   messagedata:
+  groupdata:
