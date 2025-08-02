@@ -73,8 +73,10 @@ where
                 .unwrap()
                 .routes
                 .iter()
-                .find(|r| r.path == *subpath)
-            {
+                .find(|r| {
+                    let regex = super::router::path_pattern_to_regex(&r.path);
+                    regex.is_match(subpath)
+                }) {
                 Some(r) => r,
                 None => return Ok(StatusCode::NOT_FOUND
                     .with_debug(

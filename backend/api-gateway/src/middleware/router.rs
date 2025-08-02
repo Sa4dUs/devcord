@@ -70,7 +70,10 @@ where
                 }
             };
 
-            let route = match service.routes.iter().find(|r| r.path == *subpath) {
+            let route = match service.routes.iter().find(|r| {
+                let regex = path_pattern_to_regex(&r.path);
+                regex.is_match(subpath)
+            }) {
                 Some(r) => r,
                 None => {
                     return Ok(StatusCode::NOT_FOUND
@@ -98,4 +101,15 @@ where
             Ok(response)
         })
     }
+}
+
+pub(crate) fn path_pattern_to_regex(path: &str) -> regex::Regex {
+    let pattern = path
+        .replace("-", r"\-")
+        .replace(".", r"\.")
+        .replace("{", "(?P<")
+        .replace("}", ">[^/]+)");
+
+    let full_pattern = format!("^{pattern}$");
+    regex::Regex::new(&full_pattern).expect("Invalid route regex")
 }
