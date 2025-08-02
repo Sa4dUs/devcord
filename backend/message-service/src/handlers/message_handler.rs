@@ -2,6 +2,7 @@ use std::env;
 use std::sync::Arc;
 
 use axum::Json;
+use axum::extract::Query;
 use axum::extract::ws::Message;
 use axum::{
     Extension,
@@ -10,6 +11,7 @@ use axum::{
 };
 use fluvio::metadata::core::Status;
 use reqwest::{Client, StatusCode};
+use serde::Deserialize;
 use topic_structs::MessageSent;
 use uuid::Uuid;
 
@@ -21,6 +23,12 @@ use crate::{
     models::claims::Claims,
     state::AppState,
 };
+
+#[derive(Deserialize)]
+pub struct MessageQueryParams {
+    pub from: Option<usize>,
+    pub to: Option<usize>,
+}
 
 pub async fn message_handler(
     State(state): State<Arc<AppState>>,
@@ -136,7 +144,15 @@ pub async fn fetch_messages(
     State(state): State<Arc<AppState>>,
     Extension(Authenticated { claims, jwt }): Extension<Authenticated>,
     Extension(Channel { id: channel_id }): Extension<Channel>,
+    Query(params): Query<MessageQueryParams>,
 ) -> Result<impl IntoResponse, StatusCode> {
+    let (offset, limit) = match (params.from, params.to) {
+        (Some(from), Some(to)) if to > from => (from as i64, (to - from) as i64),
+        (Some(from), None) => (from as i64, 10),
+        (None, Some(to)) => (0, to as i64),
+        _ => (0, 10),
+    };
+
     let Ok(channel_id) = Uuid::parse_str(&channel_id) else {
         tracing::error!("error channel_id");
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
@@ -152,7 +168,18 @@ pub async fn fetch_messages(
         return Err(StatusCode::NOT_FOUND);
     }
 
-    let messages = sqlx::query_as::<_, MessageInfo>("SELECT m.id, m.sender_id, m.channel_id, m.message, m.created_at FROM messages m WHERE m.channel_id = $1").bind(channel_id).fetch_all(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let messages = sqlx::query_as::<_, MessageInfo>(
+        "SELECT m.id, m.sender_id, m.channel_id, m.message, m.created_at FROM messages m
+          WHERE m.channel_id = $1
+          ORDER BY m.created_at DESC
+          OFFSET $2 LIMIT $3",
+    )
+    .bind(channel_id)
+    .bind(offset)
+    .bind(limit)
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Json(messages))
 }
