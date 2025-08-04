@@ -3,7 +3,6 @@ import { isPlatformBrowser, CommonModule } from "@angular/common";
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { SERVER_ROUTE } from "../../../../../../environment/environment.secret";
 
-
 interface SentRequest {
     to_user_username: string;
     state: "pending" | "accepted" | "rejected";
