@@ -2,20 +2,25 @@ import { Component, Inject, PLATFORM_ID, signal } from "@angular/core";
 import { isPlatformBrowser, CommonModule } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
-import { SERVER_ROUTE } from "../../../environment/environment.secret";
-import { ErrorsHandling } from "../../errors/errors";
+import { ErrorsHandling } from "../../../../../errors/errors";
+import { SERVER_ROUTE } from "../../../../../../environment/environment.secret";
 
-const context = "update";
+// Maybe unblock and block could have a superclass so there is not so much code repetitive
+//After a secound reading im more convince of the previous
+
+//TODO: make an error when the user was already unblocked (different that when it doesn't exist)
+
+const context = "unblock";
 
 @Component({
-    selector: "app-update",
+    selector: "app-blocks-unblock",
     standalone: true,
     imports: [CommonModule, FormsModule],
-    templateUrl: "./update.component.html",
-    styleUrls: ["./update.component.scss"],
+    templateUrl: "./unblock.component.html",
+    styleUrls: ["./unblock.component.scss"],
 })
-export class UpdateUsernameComponent {
-    readonly newUsername = signal("");
+export class UnblockComponent {
+    toUserUsername = "";
     readonly success = signal<string | null>(null);
     readonly error = signal<string | null>(null);
     readonly loading = signal(false);
@@ -26,9 +31,9 @@ export class UpdateUsernameComponent {
         private errorsMap: ErrorsHandling,
     ) {}
 
-    updateUsername(): void {
+    unblockUser(): void {
         if (!isPlatformBrowser(this.platformId)) {
-            console.log("You're not in browser");
+            console.log("Can't continue, browser wasn't found");
             return;
         }
 
@@ -39,10 +44,7 @@ export class UpdateUsernameComponent {
             console.error("Error: No token");
             return;
         }
-
-        const usernameTrimmed = this.newUsername().trim();
-
-        if (!usernameTrimmed) {
+        if (!this.toUserUsername.trim()) {
             this.error.set("This field can't be empty");
             console.error("Error: empty username");
             return;
@@ -53,22 +55,19 @@ export class UpdateUsernameComponent {
         this.success.set(null);
 
         const body = {
-            query: {
-                Username: usernameTrimmed,
-            },
+            to_user_username: this.toUserUsername.trim(),
         };
 
         this.http
-            .post(SERVER_ROUTE + "/api/user/update", body, {
+            .post(SERVER_ROUTE + "/api/user/blocks/unblock", body, {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .subscribe({
                 next: () => {
-                    console.log("Username succesfully updated");
                     this.success.set(
-                        `Your new username is "${usernameTrimmed}"`,
+                        `The user ${this.toUserUsername} was succesfully unblocked.`,
                     );
-                    this.newUsername.set("");
+                    this.toUserUsername = "";
                     this.loading.set(false);
                 },
                 error: (error) => {
@@ -78,5 +77,17 @@ export class UpdateUsernameComponent {
                     this.loading.set(false);
                 },
             });
+    }
+
+    isLoading() {
+        return this.loading();
+    }
+
+    getError() {
+        return this.error();
+    }
+
+    getSuccess() {
+        return this.success();
     }
 }

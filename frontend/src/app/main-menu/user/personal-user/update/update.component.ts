@@ -1,22 +1,21 @@
-import { Component, Inject, PLATFORM_ID } from "@angular/core";
+import { Component, Inject, PLATFORM_ID, signal } from "@angular/core";
 import { isPlatformBrowser, CommonModule } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
-import { signal } from "@angular/core";
-import { SERVER_ROUTE } from "../../../../environment/environment.secret";
-import { ErrorsHandling } from "../../../errors/errors";
+import { ErrorsHandling } from "../../../../errors/errors";
+import { SERVER_ROUTE } from "../../../../../environment/environment.secret";
 
-const context = "block";
+const context = "update";
 
 @Component({
-    selector: "app-block",
+    selector: "app-update",
     standalone: true,
     imports: [CommonModule, FormsModule],
-    templateUrl: "./block.component.html",
-    styleUrls: ["./block.component.scss"],
+    templateUrl: "./update.component.html",
+    styleUrls: ["./update.component.scss"],
 })
-export class BlockComponent {
-    toUserUsername = "";
+export class UpdateUsernameComponent {
+    readonly newUsername = signal("");
     readonly success = signal<string | null>(null);
     readonly error = signal<string | null>(null);
     readonly loading = signal(false);
@@ -27,9 +26,9 @@ export class BlockComponent {
         private errorsMap: ErrorsHandling,
     ) {}
 
-    blockUser(): void {
+    updateUsername(): void {
         if (!isPlatformBrowser(this.platformId)) {
-            console.log("Can't continue, browser wasn't found");
+            console.log("You're not in browser");
             return;
         }
 
@@ -41,7 +40,9 @@ export class BlockComponent {
             return;
         }
 
-        if (!this.toUserUsername.trim()) {
+        const usernameTrimmed = this.newUsername().trim();
+
+        if (!usernameTrimmed) {
             this.error.set("This field can't be empty");
             console.error("Error: empty username");
             return;
@@ -52,19 +53,22 @@ export class BlockComponent {
         this.success.set(null);
 
         const body = {
-            to_user_username: this.toUserUsername.trim(),
+            query: {
+                Username: usernameTrimmed,
+            },
         };
 
         this.http
-            .post(SERVER_ROUTE + "/api/user/blocks/block", body, {
+            .post(SERVER_ROUTE + "/api/user/update", body, {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .subscribe({
                 next: () => {
+                    console.log("Username succesfully updated");
                     this.success.set(
-                        `The user ${this.toUserUsername} was succesfully blocked`,
+                        `Your new username is "${usernameTrimmed}"`,
                     );
-                    this.toUserUsername = "";
+                    this.newUsername.set("");
                     this.loading.set(false);
                 },
                 error: (error) => {
@@ -74,15 +78,5 @@ export class BlockComponent {
                     this.loading.set(false);
                 },
             });
-    }
-    getSuccess() {
-        return this.success();
-    }
-    isLoading() {
-        return this.loading();
-    }
-
-    getError() {
-        return this.error();
     }
 }

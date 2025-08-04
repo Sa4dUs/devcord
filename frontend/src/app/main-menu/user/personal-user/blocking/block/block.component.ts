@@ -1,25 +1,21 @@
-import { Component, Inject, PLATFORM_ID, signal } from "@angular/core";
+import { Component, Inject, PLATFORM_ID } from "@angular/core";
 import { isPlatformBrowser, CommonModule } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
-import { SERVER_ROUTE } from "../../../../environment/environment.secret";
-import { ErrorsHandling } from "../../../errors/errors";
+import { signal } from "@angular/core";
+import { ErrorsHandling } from "../../../../../errors/errors";
+import { SERVER_ROUTE } from "../../../../../../environment/environment.secret";
 
-// Maybe unblock and block could have a superclass so there is not so much code repetitive
-//After a secound reading im more convince of the previous
-
-//TODO: make an error when the user was already unblocked (different that when it doesn't exist)
-
-const context = "unblock";
+const context = "block";
 
 @Component({
-    selector: "app-blocks-unblock",
+    selector: "app-block",
     standalone: true,
     imports: [CommonModule, FormsModule],
-    templateUrl: "./unblock.component.html",
-    styleUrls: ["./unblock.component.scss"],
+    templateUrl: "./block.component.html",
+    styleUrls: ["./block.component.scss"],
 })
-export class UnblockComponent {
+export class BlockComponent {
     toUserUsername = "";
     readonly success = signal<string | null>(null);
     readonly error = signal<string | null>(null);
@@ -31,7 +27,7 @@ export class UnblockComponent {
         private errorsMap: ErrorsHandling,
     ) {}
 
-    unblockUser(): void {
+    blockUser(): void {
         if (!isPlatformBrowser(this.platformId)) {
             console.log("Can't continue, browser wasn't found");
             return;
@@ -44,6 +40,7 @@ export class UnblockComponent {
             console.error("Error: No token");
             return;
         }
+
         if (!this.toUserUsername.trim()) {
             this.error.set("This field can't be empty");
             console.error("Error: empty username");
@@ -59,13 +56,13 @@ export class UnblockComponent {
         };
 
         this.http
-            .post(SERVER_ROUTE + "/api/user/blocks/unblock", body, {
+            .post(SERVER_ROUTE + "/api/user/blocks/block", body, {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .subscribe({
                 next: () => {
                     this.success.set(
-                        `The user ${this.toUserUsername} was succesfully unblocked.`,
+                        `The user ${this.toUserUsername} was succesfully blocked`,
                     );
                     this.toUserUsername = "";
                     this.loading.set(false);
@@ -78,16 +75,14 @@ export class UnblockComponent {
                 },
             });
     }
-
+    getSuccess() {
+        return this.success();
+    }
     isLoading() {
         return this.loading();
     }
 
     getError() {
         return this.error();
-    }
-
-    getSuccess() {
-        return this.success();
     }
 }

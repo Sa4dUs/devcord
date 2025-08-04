@@ -1,0 +1,29 @@
+
+<input
+  type="file"
+  accept="image/*"
+  #fileInput
+  (change)="fileChangeEvent($event)"
+  style="display: none"
+/>
+
+<div class="background-tools">
+  <button (click)="removeBackground()">Delete Background</button>
+
+  <label>
+    Background Color:
+    <input type="color" (change)="changeBackgroundColor($event)" />
+  </label>
+</div>
+
+    <button mat-raised-button (click)="fileInput.click()">
+      Select Background Image
+    </button>
+
+    <input
+      #fileInput
+      type="file"
+      accept="image/*"
+      style="display:none"
+      (change)="fileChangeEvent($event)"
+    />
