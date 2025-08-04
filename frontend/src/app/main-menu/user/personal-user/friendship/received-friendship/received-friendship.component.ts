@@ -6,7 +6,6 @@ import { RouterModule } from "@angular/router";
 import { ErrorsHandling } from "../../../../../errors/errors";
 import { SERVER_ROUTE } from "../../../../../../environment/environment.secret";
 
-
 const context = "recieve-friendships";
 
 interface FriendRequest {

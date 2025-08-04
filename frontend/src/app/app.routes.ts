@@ -24,7 +24,7 @@ export const routes: Routes = [
     { path: "blocks-block", component: BlockComponent },
     { path: "blocks-unblock", component: UnblockComponent },
     { path: "update", component: UpdateUsernameComponent },
-    {path: "main-menu",component: MainMenuComponent},
+    { path: "main-menu", component: MainMenuComponent },
 
     { path: "", redirectTo: "home", pathMatch: "full" },
 ];
