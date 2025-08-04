@@ -64,7 +64,7 @@ export class LogInComponent {
                     if (data.token) {
                         localStorage.setItem("token", data.token);
                     }
-                    this.router.navigate(["/user"]);
+                    this.router.navigate(["/main-menu"]);
                 },
                 error: (error) => {
                     console.error(
