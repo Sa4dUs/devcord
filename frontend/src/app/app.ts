@@ -1,12 +1,16 @@
 import { Component } from "@angular/core";
-import { MainMenuComponent } from "./mainMenu/mainMenu.component";
+import { RouterModule } from "@angular/router";
+import { ErrorsHandling } from "./errors/errors";
 
 @Component({
     selector: "app-root",
-    imports: [MainMenuComponent],
+    standalone: true,
+    imports: [RouterModule],
     templateUrl: "./app.html",
-    styleUrl: "./app.scss",
+    styleUrls: ["./app.scss"],
 })
 export class App {
     protected title = "frontend";
+
+    constructor(private errorsMap: ErrorsHandling) {}
 }
