@@ -1,4 +1,3 @@
-/* global localStorage */
 import {
     Component,
     EventEmitter,

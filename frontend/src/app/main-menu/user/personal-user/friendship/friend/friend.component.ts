@@ -3,7 +3,6 @@ import { isPlatformBrowser, CommonModule } from "@angular/common";
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { SERVER_ROUTE } from "../../../../../../environment/environment.secret";
 
-
 interface FriendList {
     username: string;
     created_at: string;
