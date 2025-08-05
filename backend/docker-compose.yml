@@ -192,6 +192,7 @@ services:
     depends_on:
       - sc
       - spu
+      - user-db
   
   user-db:
     image: postgres
