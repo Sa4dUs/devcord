@@ -2,8 +2,8 @@ import { Component, signal } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
 import { RouterModule, Router } from "@angular/router";
-import { SERVER_ROUTE } from "../../../../environment/environment.secret";
-import { ErrorsHandling } from "../../../errors/errors";
+import { ErrorsHandling } from "../../../../../errors/errors";
+import { SERVER_ROUTE } from "../../../../../../environment/environment.secret";
 
 const context = "friendship-request";
 
