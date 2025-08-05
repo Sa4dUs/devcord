@@ -56,11 +56,13 @@ services:
     environment:
       - CARGO_ENV
       - CALL_DATABASE_URL=postgres://postgres:password@call-db:5432/calldb
-      - CORS_ORIGIN="localhost"
+      - CORS_ORIGIN=localhost,lamoara.duckdns.org
       - JWT_SECRET=justalongenoughkeyforhs256algorithm
       - RUST_LOG=debug
     networks:
       - backend
+    depends_on:
+      - call-db
 
   call-db:
     image: postgres

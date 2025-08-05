@@ -66,7 +66,7 @@ async fn get_room_from_db(db: &PgPool, room_id: &str) -> sqlx::Result<Room> {
 
     debug!("Room Users: {:?}", users);
 
-    Ok(Room::new(users))
+    Ok(Room::new(users).await)
 }
 
 async fn init(db: &PgPool) {

@@ -33,7 +33,7 @@ async fn handle_ws(ws: WebSocket, state: Arc<AppState>, claims: Claims) {
     debug!("Waiting for room id");
     let WSFromUserMessage::ConnectToRoom { room_id } =
         //TODO! ...
-        parse_msg(ws_rx.next().await.unwrap().unwrap()).unwrap() 
+        parse_msg(ws_rx.next().await.unwrap().unwrap()).unwrap()
     else {
         debug!("Room id parsing error");
         return; //TODO! Do this properly
@@ -56,7 +56,7 @@ async fn handle_ws(ws: WebSocket, state: Arc<AppState>, claims: Claims) {
     tokio::spawn(async move {
         while let Some(msg) = room_rx.recv().await {
             match msg {
-                crate::room::WSInnerUserMessage::Message(msg) => ws_tx.send(msg).await.unwrap(), //If ws closed we remove thread, but properly
+                crate::room::WSInnerUserMessage::Message(msg) => ws_tx.send(msg).await.unwrap(), //TODO! If ws closed we remove thread, but properly
                 crate::room::WSInnerUserMessage::Close => {
                     ws_tx.close().await.unwrap(); //TODO! WTF why this error?? xd
                     break;
@@ -74,6 +74,11 @@ async fn handle_ws(ws: WebSocket, state: Arc<AppState>, claims: Claims) {
 
             room_tx.send(msg).await.unwrap(); //TODO! :D
         }
+
+        let msg = WSFromUserMessage::UserDisconected {
+            user_id: Arc::new(claims.user_id),
+        };
+        room_tx.send(msg).await.unwrap(); //TODO! Pray this doesnt break
     });
 }
 

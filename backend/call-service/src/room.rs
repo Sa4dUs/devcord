@@ -1,21 +1,17 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::{collections::HashSet, fmt, sync::Arc, vec};
 
 use anyhow::Result;
 use axum::extract::ws::Message;
 use dashmap::DashMap;
-use serde::{Deserialize, Serialize};
-use sqlx::prelude::FromRow;
+use serde::{Deserialize, Deserializer, Serialize};
 use thiserror::Error;
-use tokio::sync::{RwLock, broadcast, mpsc};
+use tokio::sync::{broadcast, mpsc};
 use tracing::{debug, info};
 use webrtc::{
     api::{
         APIBuilder, interceptor_registry::register_default_interceptors, media_engine::MediaEngine,
     },
-    ice_transport::ice_candidate::RTCIceCandidateInit,
+    ice_transport::{ice_candidate::RTCIceCandidateInit, ice_server::RTCIceServer},
     interceptor::registry::Registry,
     peer_connection::{
         RTCPeerConnection, configuration::RTCConfiguration,
@@ -24,7 +20,7 @@ use webrtc::{
     },
     rtp::packet::Packet,
     rtp_transceiver::{
-        rtp_codec::RTPCodecType::{self, Audio, Video},
+        rtp_codec::RTPCodecType::{Audio, Video},
         rtp_sender::RTCRtpSender,
     },
     track::{
@@ -48,6 +44,7 @@ pub enum WSFromUserMessage {
     RTCOffer { offer: RTCSessionDescription },
     RTCAnswer { answer: RTCSessionDescription },
     RTCCandidate { candidate: RTCIceCandidateInit },
+    UserDisconected { user_id: UserID },
     ConnectToRoom { room_id: String },
 }
 
@@ -64,6 +61,7 @@ pub enum TrackPacket {
     //UserLeft(Arc<UserID>),
 }
 
+#[derive(Debug)]
 pub enum RoomInfo {
     PCStateChanged {
         user_id: UserID,
@@ -74,7 +72,7 @@ pub enum RoomInfo {
         track: Arc<TrackRemote>,
     },
     TrackRemoved {
-        identifier: PacketIdentifier,
+        identifier: Arc<PacketIdentifier>,
     },
     UserDisconected {
         user_id: UserID,
@@ -84,7 +82,7 @@ pub enum RoomInfo {
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct PacketIdentifier {
     sender: UserID,
-    codec_type: String,
+    track_id: String,
 }
 
 #[derive(Debug)]
@@ -98,7 +96,8 @@ pub struct UserInfo {
     user_channel_sender: mpsc::Sender<WSInnerUserMessage>,
     //user_channel_receiver: mpsc::Receiver<WSFromUserMessage>,
     connection: Arc<RTCPeerConnection>,
-    tracks: TrackMap,
+    other_tracks: TrackMap,
+    user_tracks: Arc<DashMap<String, Arc<TrackRemote>>>,
 }
 
 impl UserInfo {
@@ -111,7 +110,8 @@ impl UserInfo {
             user_channel_sender,
             //user_channel_receiver,
             connection,
-            tracks: Default::default(),
+            other_tracks: Default::default(),
+            user_tracks: Default::default(),
         }
     }
 }
@@ -131,7 +131,7 @@ pub struct Room {
 }
 
 impl Room {
-    pub fn new(allowed_users: Vec<String>) -> Room {
+    pub async fn new(allowed_users: Vec<String>) -> Room {
         let mut allowed_users_set = HashSet::default();
         for user in allowed_users {
             allowed_users_set.insert(user);
@@ -143,9 +143,11 @@ impl Room {
         let active_users: Arc<DashMap<UserID, UserInfo>> = Default::default();
         {
             let active_users = active_users.clone();
+            let broadcast_sender = broadcast_sender.clone();
 
             tokio::spawn(async move {
                 while let Some(info) = info_receiver.recv().await {
+                    debug!("Recieved room info: {info:?}");
                     match info {
                         RoomInfo::PCStateChanged { user_id, state } => {
                             info!("State changed for {} to {}", user_id, state)
@@ -154,44 +156,84 @@ impl Room {
                             user_id: original_id,
                             track,
                         } => {
-                            debug!("Room is creating tracks because of {}", original_id);
                             for pair in active_users.iter() {
                                 let user_info = pair.value();
                                 let user_id = pair.key();
 
                                 if *user_id == original_id {
+                                    user_info.user_tracks.insert(track.id(), track.clone());
                                     continue;
                                 }
 
-                                let local_track = Arc::new(TrackLocalStaticRTP::new(
-                                    track.codec().capability,
-                                    track.id(),
-                                    user_id.to_string(),
-                                ));
-
-                                let sender = user_info
-                                    .connection
-                                    .add_track(local_track.clone())
-                                    .await
-                                    .unwrap(); //TODO! Do something 
-
-                                let identifier = PacketIdentifier {
-                                    sender: user_id.clone(),
-                                    codec_type: track.kind().to_string(),
-                                };
-
-                                let info = TrackInfo {
-                                    track: local_track,
-                                    sender: sender,
-                                };
-
-                                user_info.tracks.insert(identifier, info);
+                                add_remote_track(track.clone(), &original_id, user_info).await;
                             }
                         }
-                        RoomInfo::UserDisconected { user_id } => info!("User Disconected :D"),
-                        RoomInfo::TrackRemoved { identifier } => info!("Track Removed :D"),
+                        RoomInfo::TrackRemoved { identifier } => {
+                            for value in active_users.iter() {
+                                let user = value.value();
+                                if *value.key() == identifier.sender {
+                                    let removed = user.user_tracks.remove(&identifier.track_id);
+                                    debug!(
+                                        "Track removed, original user track removed: {:?}",
+                                        removed
+                                    );
+
+                                    if user.user_tracks.is_empty() {
+                                        user.user_channel_sender
+                                            .send(WSInnerUserMessage::Close)
+                                            .await
+                                            .unwrap(); //TODO! If this breaks it means the user already disconected and its completelly normal, probs should ignore
+                                        let msg = TrackPacket::Closed(identifier.clone());
+                                        broadcast_sender.send(msg).unwrap(); //TODO! If this breaks I would be surprised
+                                        let removed = active_users.remove(value.key());
+                                        debug!("Removed active user: {:?}", removed)
+                                    }
+                                    continue;
+                                }
+
+                                let Some((_, track)) = user.other_tracks.remove(&identifier) else {
+                                    continue;
+                                };
+
+                                let removed =
+                                    user.connection.remove_track(&track.sender).await.unwrap(); //TODO! This could break if the connection thas weird stuff, cannot let the room thread explode because of that
+                                debug!("Track removed, other user track removed: {:?}", removed);
+                            }
+
+                            if active_users.is_empty() {
+                                info_receiver.close();
+                                debug!("ROOM CLOSED");
+                                return; //TODO! Do close sequence
+                            }
+                        }
+                        RoomInfo::UserDisconected { user_id } => {
+                            let Some(user_info) = active_users.get(&user_id) else {
+                                continue;
+                            };
+
+                            for track in user_info.user_tracks.iter() {
+                                let identifier = PacketIdentifier {
+                                    sender: user_id.clone(),
+                                    track_id: track.id(),
+                                };
+                                let msg = TrackPacket::Closed(Arc::new(identifier));
+                                broadcast_sender.send(msg).unwrap(); //TODO!
+                            }
+
+                            user_info.connection.close().await.unwrap(); //TODO! ?
+
+                            active_users.remove(&user_id);
+
+                            if active_users.is_empty() {
+                                info_receiver.close();
+                                debug!("ROOM CLOSED");
+                                return; //TODO! Do close sequence
+                            }
+                        }
                     }
                 }
+
+                debug!("ROOM CLOSED WEIRD WAY");
             });
         }
 
@@ -229,17 +271,54 @@ impl Room {
 
         let info = UserInfo::new(inner_tx, pc.clone());
 
-        create_ws_listener_thread(pc, inner_rx);
+        create_ws_listener_thread(pc, inner_rx, self.info_sender.clone());
         create_transmiter_thread(
             user_id.clone(),
-            info.tracks.clone(),
+            info.other_tracks.clone(),
             self.broadcast_sender.subscribe(),
         );
 
+        let info = self.add_existing_tracks_to_user(info).await;
         self.active_users.insert(user_id, info); //TODO! Shouldnt need to check if already exists but should just in case (Reminder)
-
         Ok((ws_tx, ws_rx))
     }
+
+    async fn add_existing_tracks_to_user(&self, user_info: UserInfo) -> UserInfo {
+        for value in self.active_users.iter() {
+            let user_id = value.key();
+            for track in value.value().user_tracks.iter() {
+                add_remote_track(track.clone(), &user_id, &user_info).await;
+            }
+        }
+
+        user_info
+    }
+}
+
+async fn add_remote_track(track: Arc<TrackRemote>, user_id: &UserID, user_info: &UserInfo) {
+    let local_track = Arc::new(TrackLocalStaticRTP::new(
+        track.codec().capability,
+        track.id(),
+        user_id.to_string(),
+    ));
+
+    let sender = user_info
+        .connection
+        .add_track(local_track.clone())
+        .await
+        .unwrap(); //TODO! Do something 
+
+    let identifier = PacketIdentifier {
+        sender: user_id.clone(),
+        track_id: track.id(),
+    };
+
+    let info = TrackInfo {
+        track: local_track,
+        sender: sender,
+    };
+
+    user_info.other_tracks.insert(identifier, info);
 }
 
 fn create_transmiter_thread(
@@ -259,7 +338,6 @@ fn create_transmiter_thread(
                     }
                     if let Some(track) = tracks.get(&user_packet.identifier) {
                         track.track.write_rtp(&user_packet.packet).await.unwrap(); //TODO! if err probs close track
-                        debug!("Packet sent!");
                     }
                 }
                 TrackPacket::Closed(packet_identifier) => {
@@ -275,6 +353,7 @@ fn create_transmiter_thread(
 fn create_ws_listener_thread(
     pc: Arc<RTCPeerConnection>,
     mut receiver: mpsc::Receiver<WSFromUserMessage>,
+    info_sender: mpsc::Sender<RoomInfo>,
 ) {
     tokio::spawn(async move {
         while let Some(msg) = receiver.recv().await {
@@ -291,6 +370,10 @@ fn create_ws_listener_thread(
                         continue;
                     }
                     pc.add_ice_candidate(candidate).await.unwrap(); //TODO! This error is important
+                }
+                WSFromUserMessage::UserDisconected { user_id } => {
+                    let msg = RoomInfo::UserDisconected { user_id };
+                    info_sender.send(msg).await.unwrap(); //TODO! Probs just ignore
                 }
                 _ => (),
             }
@@ -357,21 +440,22 @@ fn setup_on_track(
             user_id: user_id.clone(),
             track: track.clone(),
         };
+
         let identifier = PacketIdentifier {
             sender: user_id.clone(),
-            codec_type: track.kind().to_string(),
+            track_id: track.id(),
         };
 
         let identifier = Arc::new(identifier);
         let broadcast_sender = broadcast_sender.clone();
         let info_sender = info_sender.clone();
 
-        debug!("On track trigered for {} with track {:?}", user_id, track);
         tokio::spawn(async move {
-            info_sender.send(info).await.unwrap();
+            info_sender.send(info).await.unwrap(); //TODO!
 
+            debug!("On track started reading");
             while let Ok((packet, _)) = track.read_rtp().await {
-                let identifier = Arc::clone(&identifier);
+                let identifier = identifier.clone();
                 let packet = UserPacket { identifier, packet };
                 let packet = Arc::new(packet);
                 let packet = TrackPacket::UserPacket(packet);
@@ -379,10 +463,10 @@ fn setup_on_track(
                 broadcast_sender.send(packet).unwrap();
             }
 
-            let packet = TrackPacket::Closed(identifier);
-            broadcast_sender.send(packet).unwrap(); //TODO! Probs worry or ignore
+            debug!("On track finished reading");
+            let msg = RoomInfo::TrackRemoved { identifier };
+            info_sender.send(msg).await.unwrap(); //TODO! An error here is indeed a problem
         });
-        debug!("Thread spawned good :D");
         Box::pin(async move {})
     }));
 }
@@ -447,7 +531,13 @@ async fn get_peer_conn() -> Result<RTCPeerConnection> {
         .with_interceptor_registry(registry)
         .build();
 
-    let config = RTCConfiguration::default();
+    let config = RTCConfiguration {
+        ice_servers: vec![RTCIceServer {
+            urls: vec!["stun:stun.l.google.com:19302".to_string()],
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
 
     let peer_connection = api.new_peer_connection(config).await?;
 
@@ -459,4 +549,65 @@ async fn get_peer_conn() -> Result<RTCPeerConnection> {
         .await?;
 
     Ok(peer_connection)
+}
+
+#[derive(Debug, Deserialize)]
+struct IceServerJson {
+    #[serde(deserialize_with = "string_or_vec")]
+    urls: Vec<String>,
+    username: Option<String>,
+    credential: Option<String>,
+}
+
+impl Into<RTCIceServer> for IceServerJson {
+    fn into(self) -> RTCIceServer {
+        RTCIceServer {
+            urls: self.urls,
+            username: self.username.unwrap_or_default(),
+            credential: self.credential.unwrap_or_default(),
+        }
+    }
+}
+
+// Adaptador: acepta string o array
+fn string_or_vec<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct StringOrVec;
+
+    impl<'de> serde::de::Visitor<'de> for StringOrVec {
+        type Value = Vec<String>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a string or a list of strings")
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(vec![v.to_string()])
+        }
+
+        fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(vec![v])
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: serde::de::SeqAccess<'de>,
+        {
+            let mut vec = Vec::new();
+            while let Some(s) = seq.next_element()? {
+                vec.push(s);
+            }
+            Ok(vec)
+        }
+    }
+
+    deserializer.deserialize_any(StringOrVec)
 }
