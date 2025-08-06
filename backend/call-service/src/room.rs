@@ -33,6 +33,7 @@ use webrtc::{
 
 type UserID = Arc<String>;
 type TrackMap = Arc<DashMap<PacketIdentifier, TrackInfo>>;
+type ActiveUsersMap = Arc<DashMap<UserID, UserInfo>>;
 
 #[derive(Error, Debug, Clone, Copy)]
 pub enum Error {
@@ -127,7 +128,7 @@ pub struct TrackInfo {
 #[derive(Debug)]
 pub struct Room {
     allowed_users: HashSet<String>,
-    active_users: Arc<DashMap<UserID, UserInfo>>,
+    active_users: ActiveUsersMap,
     broadcast_sender: broadcast::Sender<TrackPacket>,
     info_sender: mpsc::Sender<RoomInfo>,
 }
@@ -140,104 +141,15 @@ impl Room {
         }
 
         let (broadcast_sender, _) = broadcast::channel(10);
-        let (info_sender, mut info_receiver) = mpsc::channel(10);
+        let (info_sender, info_receiver) = mpsc::channel(10);
 
-        let active_users: Arc<DashMap<UserID, UserInfo>> = Default::default();
-        {
-            let active_users = active_users.clone();
-            let broadcast_sender = broadcast_sender.clone();
+        let active_users: ActiveUsersMap = Default::default();
 
-            tokio::spawn(async move {
-                while let Some(info) = info_receiver.recv().await {
-                    debug!("Recieved room info: {info:?}");
-                    match info {
-                        RoomInfo::PCStateChanged { user_id, state } => {
-                            info!("State changed for {} to {}", user_id, state)
-                        }
-                        RoomInfo::TrackCreated {
-                            user_id: original_id,
-                            track,
-                        } => {
-                            for pair in active_users.iter() {
-                                let user_info = pair.value();
-                                let user_id = pair.key();
-
-                                if *user_id == original_id {
-                                    user_info.user_tracks.insert(track.id(), track.clone());
-                                    continue;
-                                }
-
-                                add_remote_track(track.clone(), &original_id, user_info).await;
-                            }
-                        }
-                        RoomInfo::TrackRemoved { identifier } => {
-                            for value in active_users.iter() {
-                                let user = value.value();
-                                if *value.key() == identifier.sender {
-                                    let removed = user.user_tracks.remove(&identifier.track_id);
-                                    debug!(
-                                        "Track removed, original user track removed: {:?}",
-                                        removed
-                                    );
-
-                                    if user.user_tracks.is_empty() {
-                                        user.user_channel_sender
-                                            .send(WSInnerUserMessage::Close)
-                                            .await
-                                            .unwrap(); //TODO! If this breaks it means the user already disconected and its completelly normal, probs should ignore
-                                        let msg = TrackPacket::Closed(identifier.clone());
-                                        broadcast_sender.send(msg).unwrap(); //TODO! If this breaks I would be surprised
-                                        let removed = active_users.remove(value.key());
-                                        debug!("Removed active user: {:?}", removed)
-                                    }
-                                    continue;
-                                }
-
-                                let Some((_, track)) = user.other_tracks.remove(&identifier) else {
-                                    continue;
-                                };
-
-                                let removed =
-                                    user.connection.remove_track(&track.sender).await.unwrap(); //TODO! This could break if the connection thas weird stuff, cannot let the room thread explode because of that
-                                debug!("Track removed, other user track removed: {:?}", removed);
-                            }
-
-                            if active_users.is_empty() {
-                                info_receiver.close();
-                                debug!("ROOM CLOSED");
-                                return; //TODO! Do close sequence
-                            }
-                        }
-                        RoomInfo::UserDisconected { user_id } => {
-                            let Some(user_info) = active_users.get(&user_id) else {
-                                continue;
-                            };
-
-                            for track in user_info.user_tracks.iter() {
-                                let identifier = PacketIdentifier {
-                                    sender: user_id.clone(),
-                                    track_id: track.id(),
-                                };
-                                let msg = TrackPacket::Closed(Arc::new(identifier));
-                                broadcast_sender.send(msg).unwrap(); //TODO!
-                            }
-
-                            user_info.connection.close().await.unwrap(); //TODO! ?
-
-                            active_users.remove(&user_id);
-
-                            if active_users.is_empty() {
-                                info_receiver.close();
-                                debug!("ROOM CLOSED");
-                                return; //TODO! Do close sequence
-                            }
-                        }
-                    }
-                }
-
-                debug!("ROOM CLOSED WEIRD WAY");
-            });
-        }
+        create_room_controller_thread(
+            broadcast_sender.clone(),
+            info_receiver,
+            active_users.clone(),
+        );
 
         Room {
             allowed_users: allowed_users_set,
@@ -295,6 +207,99 @@ impl Room {
 
         user_info
     }
+}
+
+fn create_room_controller_thread(
+    broadcast_sender: broadcast::Sender<TrackPacket>,
+    mut info_receiver: mpsc::Receiver<RoomInfo>,
+    active_users: ActiveUsersMap,
+) {
+    tokio::spawn(async move {
+        while let Some(info) = info_receiver.recv().await {
+            debug!("Recieved room info: {info:?}");
+            match info {
+                RoomInfo::PCStateChanged { user_id, state } => {
+                    info!("State changed for {} to {}", user_id, state)
+                }
+                RoomInfo::TrackCreated {
+                    user_id: original_id,
+                    track,
+                } => {
+                    for pair in active_users.iter() {
+                        let user_info = pair.value();
+                        let user_id = pair.key();
+
+                        if *user_id == original_id {
+                            user_info.user_tracks.insert(track.id(), track.clone());
+                            continue;
+                        }
+
+                        add_remote_track(track.clone(), &original_id, user_info).await;
+                    }
+                }
+                RoomInfo::TrackRemoved { identifier } => {
+                    for value in active_users.iter() {
+                        let user = value.value();
+                        if *value.key() == identifier.sender {
+                            let removed = user.user_tracks.remove(&identifier.track_id);
+                            debug!("Track removed, original user track removed: {:?}", removed);
+
+                            if user.user_tracks.is_empty() {
+                                user.user_channel_sender
+                                    .send(WSInnerUserMessage::Close)
+                                    .await
+                                    .unwrap(); //TODO! If this breaks it means the user already disconected and its completelly normal, probs should ignore
+                                let msg = TrackPacket::Closed(identifier.clone());
+                                broadcast_sender.send(msg).unwrap(); //TODO! If this breaks I would be surprised
+                                let removed = active_users.remove(value.key());
+                                debug!("Removed active user: {:?}", removed)
+                            }
+                            continue;
+                        }
+
+                        let Some((_, track)) = user.other_tracks.remove(&identifier) else {
+                            continue;
+                        };
+
+                        let removed = user.connection.remove_track(&track.sender).await.unwrap(); //TODO! This could break if the connection thas weird stuff, cannot let the room thread explode because of that
+                        debug!("Track removed, other user track removed: {:?}", removed);
+                    }
+
+                    if active_users.is_empty() {
+                        info_receiver.close();
+                        debug!("ROOM CLOSED");
+                        return; //TODO! Do close sequence
+                    }
+                }
+                RoomInfo::UserDisconected { user_id } => {
+                    let Some(user_info) = active_users.get(&user_id) else {
+                        continue;
+                    };
+
+                    for track in user_info.user_tracks.iter() {
+                        let identifier = PacketIdentifier {
+                            sender: user_id.clone(),
+                            track_id: track.id(),
+                        };
+                        let msg = TrackPacket::Closed(Arc::new(identifier));
+                        broadcast_sender.send(msg).unwrap(); //TODO!
+                    }
+
+                    user_info.connection.close().await.unwrap(); //TODO! ?
+
+                    active_users.remove(&user_id);
+
+                    if active_users.is_empty() {
+                        info_receiver.close();
+                        debug!("ROOM CLOSED");
+                        return; //TODO! Do close sequence
+                    }
+                }
+            }
+        }
+
+        debug!("ROOM CLOSED WEIRD WAY");
+    });
 }
 
 async fn add_remote_track(track: Arc<TrackRemote>, user_id: &UserID, user_info: &UserInfo) {

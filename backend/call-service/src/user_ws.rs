@@ -30,13 +30,14 @@ pub async fn handle_upgrade(
 async fn handle_ws(ws: WebSocket, state: Arc<AppState>, claims: Claims) {
     let (mut ws_tx, mut ws_rx) = ws.split();
 
+    //Maybe change this so it can loop, rn its good tho
     debug!("Waiting for room id");
     let WSFromUserMessage::ConnectToRoom { room_id } =
         //TODO! ...
         parse_msg(ws_rx.next().await.unwrap().unwrap()).unwrap()
     else {
         debug!("Room id parsing error");
-        return; //TODO! Do this properly
+        return; //TODO! Do this properly (Give feedback)
     };
 
     debug!("Room id valid: {}", room_id);
@@ -58,7 +59,7 @@ async fn handle_ws(ws: WebSocket, state: Arc<AppState>, claims: Claims) {
             match msg {
                 crate::room::WSInnerUserMessage::Message(msg) => ws_tx.send(msg).await.unwrap(), //TODO! If ws closed we remove thread, but properly
                 crate::room::WSInnerUserMessage::Close => {
-                    ws_tx.close().await.unwrap(); //TODO! WTF why this error?? xd
+                    ws_tx.close().await.unwrap(); //TODO! We dont care about this error really xd
                     break;
                 }
             }
