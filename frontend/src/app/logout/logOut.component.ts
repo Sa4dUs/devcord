@@ -34,6 +34,7 @@ export class LogOutComponent {
       next: () => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        console.log("Eso, tú pírate");
         this.router.navigate(["/login"]); //suena razonable que cuando hagas logOut te redirija aquí 
       },
       error: (error) => {
