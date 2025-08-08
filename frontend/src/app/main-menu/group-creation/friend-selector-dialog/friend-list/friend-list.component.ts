@@ -21,6 +21,7 @@ export class FriendListComponent implements OnInit {
     selections: { name: string; checked: boolean }[] = [];
     loading = false;
     error: string | null = null;
+    selectedUsers = new Set<string>();
 
     constructor(
         private http: HttpClient,
@@ -62,7 +63,6 @@ export class FriendListComponent implements OnInit {
             )
             .subscribe({
                 next: (data) => {
-                    console.log("Amigos cargados:", data);
                     this.selections = data.map((friend) => ({
                         name: friend.username,
                         checked: false,
@@ -77,7 +77,16 @@ export class FriendListComponent implements OnInit {
                 },
             });
     }
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onFriendCheckboxChanged(checked: boolean, friend: any): void {
+        if (checked) {
+            this.selectedUsers.add(friend.name);
+            console.log(friend.name);
+            console.log(this.selectedUsers);
+        } else {
+            this.selectedUsers.delete(friend.name);
+        }
+    }
     getSelectedFriends(): string[] {
         return this.selections.filter((f) => f.checked).map((f) => f.name);
     }

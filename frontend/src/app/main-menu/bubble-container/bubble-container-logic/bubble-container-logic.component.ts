@@ -1,7 +1,7 @@
 import { HEIGHT, WIDTH, BUBBLESIZE } from "../../main-menuConstants";
 
 export interface BubbleData {
-    id: number;
+    id: string;
     isColliding: boolean;
     isDragging: boolean;
     x: number;
