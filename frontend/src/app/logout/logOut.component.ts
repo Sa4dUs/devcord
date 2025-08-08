@@ -24,7 +24,7 @@ export class LogOutComponent {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
 
         if (!user?.username) {
-            console.warn("Mensajes en Español de España.");
+            console.warn("Messages in spanish as Gibraltar.");
             return;
         }
 
@@ -36,7 +36,7 @@ export class LogOutComponent {
                 next: () => {
                     localStorage.removeItem("token");
                     localStorage.removeItem("user");
-                    console.log("Eso, tú pírate");
+                    console.log("You are fired");
                     this.router.navigate(["/login"]); //suena razonable que cuando hagas logOut te redirija aquí
                 },
                 error: (error) => {
