@@ -1,0 +1,7 @@
+<h2>LogOut</h2>
+
+<button (click)="onSubmitLogOut()" [disabled]="loading">
+  {{ loading ? "Cerrando sesión..." : "Cerrar sesión" }}
+</button>
+
+<p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
