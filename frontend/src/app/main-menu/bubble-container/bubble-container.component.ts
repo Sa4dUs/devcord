@@ -42,9 +42,7 @@ export class BubbleContainer implements AfterViewInit {
         flipV: false,
     };
 
-    bubblesData: BubbleData[] = [
-        { id: 1, isColliding: false, isDragging: false, x: 0, y: 0 },
-    ];
+    bubblesData: BubbleData[] = [];
 
     bubbleRects: DOMRect[] = [];
     logic = new BubbleContainerLogic();
@@ -95,8 +93,7 @@ export class BubbleContainer implements AfterViewInit {
         this.bubbleRects = this.logic.updateRects(this.bubblesData);
     }
 
-    addBubble() {
-        const newId = this.bubblesData.length + 1;
+    addBubble(groupId: string) {
         const maxAttempts = 100;
 
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -114,7 +111,7 @@ export class BubbleContainer implements AfterViewInit {
 
             if (!collision) {
                 this.bubblesData.push({
-                    id: newId,
+                    id: groupId,
                     isColliding: false,
                     isDragging: false,
                     x,
@@ -125,8 +122,7 @@ export class BubbleContainer implements AfterViewInit {
             }
         }
     }
-
-    trackById(index: number, item: { id: number }) {
+    trackById(index: number, item: { id: string }) {
         return item.id;
     }
 }

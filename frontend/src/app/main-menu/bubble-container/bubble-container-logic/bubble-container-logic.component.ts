@@ -3,7 +3,7 @@ import { HEIGHT, WIDTH, BUBBLESIZE } from "../../main-menuConstants";
 ///TODO: IMPROVE THE COLLISIONS
 
 export interface BubbleData {
-    id: number;
+    id: string;
     isColliding: boolean;
     isDragging: boolean;
     x: number;
