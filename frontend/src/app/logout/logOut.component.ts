@@ -7,39 +7,43 @@ import { SERVER_ROUTE } from "../../environment/environment.secret";
 const context = "logout";
 
 @Component({
-  selector: "app-logOut",
-  standalone: true,
-  templateUrl: "./logOut.component.html",
-  styleUrls: ["./logOut.component.scss"],
+    selector: "app-logOut",
+    standalone: true,
+    templateUrl: "./logOut.component.html",
+    styleUrls: ["./logOut.component.scss"],
 })
 export class LogOutComponent {
-  private http = inject(HttpClient);
-  private router = inject(Router);
-  errorMessage = "";
-  loading=false;
+    private http = inject(HttpClient);
+    private router = inject(Router);
+    errorMessage = "";
+    loading = false;
 
-  constructor(private errorsMap: ErrorsHandling) {}
+    constructor(private errorsMap: ErrorsHandling) {}
 
-  onSubmitLogOut(): void {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    onSubmitLogOut(): void {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-    if (!user?.username) {
-      console.warn("Mensajes en Español de España.");
-      return;
+        if (!user?.username) {
+            console.warn("Mensajes en Español de España.");
+            return;
+        }
+
+        const userId = user.id || user.username;
+
+        this.http
+            .post(`${SERVER_ROUTE}/api/auth/logout?userId=${userId}`, null)
+            .subscribe({
+                next: () => {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    console.log("Eso, tú pírate");
+                    this.router.navigate(["/login"]); //suena razonable que cuando hagas logOut te redirija aquí
+                },
+                error: (error) => {
+                    console.error(
+                        this.errorsMap.getErrorMessage(context, error),
+                    );
+                },
+            });
     }
-
-    const userId = user.id || user.username;
-
-    this.http.post(`${SERVER_ROUTE}/api/auth/logout?userId=${userId}`, null).subscribe({
-      next: () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        console.log("Eso, tú pírate");
-        this.router.navigate(["/login"]); //suena razonable que cuando hagas logOut te redirija aquí 
-      },
-      error: (error) => {
-        console.error(this.errorsMap.getErrorMessage(context, error));
-      },
-    });
-  }
 }
