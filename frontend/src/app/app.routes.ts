@@ -10,6 +10,8 @@ import { FriendshipFriendComponent } from "./personal-user/friendship/friend/fri
 import { BlockComponent } from "./personal-user/blocking/block/block.component";
 import { UnblockComponent } from "./personal-user/blocking/unblock/unblock.component";
 import { UpdateUsernameComponent } from "./personal-user/update/update.component";
+import { LogOutComponent } from "./logout/logOut.component";
+
 
 export const routes: Routes = [
     { path: "register", component: RegisterComponent },
@@ -23,6 +25,6 @@ export const routes: Routes = [
     { path: "blocks-block", component: BlockComponent },
     { path: "blocks-unblock", component: UnblockComponent },
     { path: "update", component: UpdateUsernameComponent },
-
+    { path: "logout", component: LogOutComponent }, 
     { path: "", redirectTo: "home", pathMatch: "full" },
 ];
