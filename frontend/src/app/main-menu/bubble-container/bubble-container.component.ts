@@ -14,13 +14,19 @@ import {
 } from "./bubble-container-logic/bubble-container-logic.component";
 import { BubbleContainerBackground } from "./bubble-container-background/bubble-container-background.component";
 import { WIDTH, HEIGHT, BUBBLESIZE } from "../main-menuConstants";
+import { GroupLoader } from "./group-loader/group-loader.component";
 
 @Component({
     selector: "bubbleContainer",
     templateUrl: "bubble-container.component.html",
     styleUrls: ["bubble-container.component.scss"],
     standalone: true,
-    imports: [CommonModule, BubbleComponent, BubbleContainerBackground],
+    imports: [
+        CommonModule,
+        BubbleComponent,
+        BubbleContainerBackground,
+        GroupLoader,
+    ],
 })
 export class BubbleContainer implements AfterViewInit {
     boundarySelector = ".example-boundary";
@@ -91,6 +97,12 @@ export class BubbleContainer implements AfterViewInit {
     checkCollisions() {
         this.logic.checkCollisions(this.bubblesData);
         this.bubbleRects = this.logic.updateRects(this.bubblesData);
+    }
+
+    onGroupsLoaded(groups: { groupId: string }[]) {
+        groups.forEach((group) => {
+            this.addBubble(group.groupId);
+        });
     }
 
     addBubble(groupId: string) {

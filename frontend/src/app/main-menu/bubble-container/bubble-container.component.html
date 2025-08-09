@@ -8,6 +8,10 @@
     'background-repeat': 'no-repeat'
   }"
 >
+<group-loader
+  (groupsLoaded)="onGroupsLoaded($event)">
+</group-loader>
+
 <bubble
   *ngFor="let bubble of bubblesData; let i = index; trackBy: trackById"
   [boundarySelector]="boundarySelector"
