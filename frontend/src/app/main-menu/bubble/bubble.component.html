@@ -3,12 +3,9 @@
   cdkDrag
   [cdkDragBoundary]="boundarySelector"
   [class.colliding]="isColliding"
-  [class.dragging]="isDragging"
-  (mousedown)="onMouseDown()"
-  (mouseup)="onMouseUp()"
-  (click)="onClick()"
-  (cdkDragStarted)="onDragStarted($event)"
-  (cdkDragEnded)="onDragEnded($event)"
+  (click)="onClick($event)"
+  (cdkDragStarted)="onDragStarted()"
+  (cdkDragEnded)="onDragEnded()"
   (cdkDragMoved)="onDragMoved($event)"
 >
   {{ id }}
