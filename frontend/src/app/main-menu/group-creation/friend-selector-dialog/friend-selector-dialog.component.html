@@ -1,0 +1,9 @@
+<h1 mat-dialog-title>Select the group's members</h1>
+
+<friend-list></friend-list>
+<div mat-dialog-actions>
+  <button mat-button [mat-dialog-close]="false">Cancel</button>
+ <button mat-button (click)="onSubmitMembersNewGroup()" cdkFocusInitial>
+  Done
+</button>
+</div>

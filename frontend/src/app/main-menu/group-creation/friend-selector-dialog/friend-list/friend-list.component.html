@@ -1,0 +1,14 @@
+<div *ngIf="isLoading()">Loading Friends...</div>
+
+<div *ngIf="getError()" class="error">{{ getError() }}</div>
+
+<ng-container *ngIf="!isLoading() && !getError()">
+  <div *ngFor="let friend of selections; let i = index">
+  <friend-checkbox [name]="friend.name" [id]="i+1" (changed)="onFriendCheckboxChanged($event, friend)">
+  </friend-checkbox>
+  </div>
+
+  <p *ngIf="selections.length === 0">Not friends yet</p>
+</ng-container>
+
+ 

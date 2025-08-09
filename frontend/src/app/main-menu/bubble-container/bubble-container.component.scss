@@ -1,0 +1,10 @@
+.example-boundary {
+  width: var(--width);
+  height: var(--height);
+  max-width: 100%;
+  border: 2px dotted gray;
+  position: relative;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+}
