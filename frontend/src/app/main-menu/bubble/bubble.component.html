@@ -1,0 +1,13 @@
+<div
+  class="bubble"
+  cdkDrag
+  [cdkDragBoundary]="boundarySelector"
+  [class.colliding]="isColliding"
+  [class.dragging]="isDragging"
+  (click)="onClick()"
+  (cdkDragStarted)="onDragStarted($event)"
+  (cdkDragEnded)="onDragEnded($event)"
+  (cdkDragMoved)="onDragMoved($event)"
+>
+  {{ id }}
+</div>

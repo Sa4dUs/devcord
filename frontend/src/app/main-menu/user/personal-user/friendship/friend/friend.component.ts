@@ -1,7 +1,7 @@
 import { Component, Inject, PLATFORM_ID, signal } from "@angular/core";
 import { isPlatformBrowser, CommonModule } from "@angular/common";
 import { HttpClient, HttpParams } from "@angular/common/http";
-import { SERVER_ROUTE } from "../../../../environment/environment.secret";
+import { SERVER_ROUTE } from "../../../../../../environment/environment.secret";
 
 interface FriendList {
     username: string;
@@ -61,6 +61,7 @@ export class FriendshipFriendComponent {
                     this.loading.set(false);
                 },
                 error: (err) => {
+                    // Para pensar, TODO adaptarlo al mapErrors
                     console.error("Error with the friend requests:", err);
                     this.error.set(
                         `Error loading friends requests: ${err.message || err.status}`,

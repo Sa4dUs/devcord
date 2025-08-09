@@ -1,22 +1,23 @@
 import { Component, Inject, PLATFORM_ID, signal } from "@angular/core";
 import { isPlatformBrowser, CommonModule } from "@angular/common";
 import { HttpClient, HttpParams } from "@angular/common/http";
-import { SERVER_ROUTE } from "../../../../environment/environment.secret";
+import { SERVER_ROUTE } from "../../../../../../environment/environment.secret";
 
-interface FriendList {
-    username: string;
+interface SentRequest {
+    to_user_username: string;
+    state: "pending" | "accepted" | "rejected";
     created_at: string;
 }
 
 @Component({
-    selector: "app-friend",
+    selector: "app-friendship-sent",
     standalone: true,
     imports: [CommonModule],
-    templateUrl: "./friend.component.html",
-    styleUrls: ["./friend.component.scss"],
+    templateUrl: "./friendship-sent.component.html",
+    styleUrls: ["./friendship-sent.component.scss"],
 })
-export class FriendshipFriendComponent {
-    readonly requests = signal<FriendList[]>([]);
+export class FriendshipSentComponent {
+    readonly requests = signal<SentRequest[]>([]);
     readonly loading = signal(true);
     readonly error = signal<string | null>(null);
 
@@ -24,10 +25,10 @@ export class FriendshipFriendComponent {
         private http: HttpClient,
         @Inject(PLATFORM_ID) private platformId: object,
     ) {
-        this.loadFriends();
+        this.loadSentRequests();
     }
 
-    loadFriends(): void {
+    loadSentRequests(): void {
         if (!isPlatformBrowser(this.platformId)) {
             this.loading.set(false);
             return;
@@ -37,7 +38,7 @@ export class FriendshipFriendComponent {
 
         if (!token) {
             this.error.set("You're not logged");
-            console.error("There is no token");
+            console.error("No token");
             this.loading.set(false);
             return;
         }
@@ -45,7 +46,7 @@ export class FriendshipFriendComponent {
         const params = new HttpParams().set("from", "0").set("to", "20");
 
         this.http
-            .get<FriendList[]>(SERVER_ROUTE + "/api/user/friendship/friends", {
+            .get<SentRequest[]>(SERVER_ROUTE + "/api/user/friendship/sent", {
                 headers: { Authorization: `Bearer ${token}` },
                 params,
             })
@@ -54,16 +55,17 @@ export class FriendshipFriendComponent {
                     console.log(data);
                     this.requests.set(
                         data.map((d) => ({
-                            username: d.username,
+                            to_user_username: d.to_user_username,
+                            state: d.state,
                             created_at: d.created_at,
                         })),
                     );
                     this.loading.set(false);
                 },
                 error: (err) => {
-                    console.error("Error with the friend requests:", err);
+                    console.error("Error making the request:", err);
                     this.error.set(
-                        `Error loading friends requests: ${err.message || err.status}`,
+                        `Error loading requests: ${err.message || err.status}`,
                     );
                     this.loading.set(false);
                 },

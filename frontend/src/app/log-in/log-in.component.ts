@@ -8,11 +8,11 @@ import { SERVER_ROUTE } from "../../environment/environment.secret";
 
 const context = "login";
 @Component({
-    selector: "app-logIn",
+    selector: "log-in",
     standalone: true,
     imports: [ReactiveFormsModule],
-    templateUrl: "./logIn.component.html",
-    styleUrls: ["./logIn.component.scss"],
+    templateUrl: "./log-in.component.html",
+    styleUrls: ["./log-in.component.scss"],
 })
 export class LogInComponent {
     private fb = inject(FormBuilder);
@@ -64,7 +64,7 @@ export class LogInComponent {
                     if (data.token) {
                         localStorage.setItem("token", data.token);
                     }
-                    this.router.navigate(["/user"]);
+                    this.router.navigate(["/main-menu"]);
                 },
                 error: (error) => {
                     console.error(

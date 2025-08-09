@@ -1,0 +1,17 @@
+<div *ngIf="loading()">Updating username...</div>
+<div *ngIf="error()" class="error">{{ error() }}</div>
+
+<form (ngSubmit)="updateUsername(); $event.preventDefault()">
+  <label for="newUsername">New username:</label>
+  <input
+    id="newUsername"
+    [(ngModel)]="newUsername"
+    name="newUsername"
+    required
+    [ngModel]="newUsername()"
+    (ngModelChange)="newUsername.set($event)"
+  />
+  <button type="submit">Update</button>
+</form>
+
+<p *ngIf="success()" class="success">{{ success() }}</p>

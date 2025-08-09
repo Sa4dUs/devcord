@@ -1,0 +1,13 @@
+
+<p><strong>Name:</strong> {{ user.username }}</p>
+<p><strong>Email:</strong> {{ user.email }}</p>
+<p><strong>Telephone :</strong> {{ user.telephone || 'No indicado' }}</p>
+<div class = "personal-container">
+<a routerLink="/friendship-request">Send Friend Request</a>
+<a routerLink="/recieved-friendship">Requests Recieved</a>
+<a routerLink="/friendship-sent">Requests sent</a>
+<a routerLink="/friendship-friend">Friend List</a>
+<a routerLink="/blocks-block">Block User</a>
+<a routerLink="/blocks-unblock">Unblock User</a>
+<a routerLink="/update"> Update</a>
+</div>

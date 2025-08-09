@@ -6,6 +6,6 @@
         "outDir": "./out-tsc/app",
         "types": ["node"]
     },
-    "include": ["src/**/*.ts"],
+    "include": ["src/**/*.ts", "src/app/main-menu/bubble-container/bubbleContainerMenu/bubbleContainerMenu.componentts"],
     "exclude": ["src/**/*.spec.ts"]
 }
