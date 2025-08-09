@@ -1,0 +1,12 @@
+<h2>Mi querida cuenta</h2>
+<p><strong>Name:</strong> {{ user.username }}</p>
+<p><strong>Email:</strong> {{ user.email }}</p>
+<p><strong>Telephone :</strong> {{ user.telephone || 'No indicado' }}</p>
+
+<a routerLink="/friendship-request">Enviar Solicitudes</a>
+<a routerLink="/recieved-friendship">Ver lista de solicitudes</a>
+<a routerLink="/friendship-sent">Ver solicitudes enviadas</a>
+<a routerLink="/friendship-friend">Ver Lista de Amigos</a>
+<a routerLink="/blocks-block">Bloquear usuario</a>
+<a routerLink="/blocks-unblock">Desbloquear usuario</a>
+<a routerLink="/update"> Actualizar </a>

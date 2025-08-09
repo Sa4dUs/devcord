@@ -1,0 +1,12 @@
+<div *ngIf="isLoading()">Loading Friends...</div>
+<div *ngIf="getError()" class="error">{{ getError() }}</div>
+
+<ng-container *ngIf="!isLoading() && !getError()">
+  <ul *ngIf="hasRequests()">
+    <li *ngFor="let req of getRequests()">
+      <strong>{{ req.username }}</strong> — {{ req.created_at | date:'short' }}
+    </li>
+  </ul>
+
+  <p *ngIf="showEmpty()">Not friends yet</p>
+</ng-container>

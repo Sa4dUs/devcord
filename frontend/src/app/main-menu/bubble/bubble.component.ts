@@ -56,6 +56,7 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
             this.clicked.emit();
         }
     }
+    //Probably the events are need to improve how it works
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onDragStarted(event: CdkDragStart) {
         this.isDragging = true;

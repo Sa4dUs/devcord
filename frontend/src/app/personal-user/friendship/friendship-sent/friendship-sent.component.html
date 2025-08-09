@@ -1,0 +1,12 @@
+<div *ngIf="isLoading()">Loading requests sent...</div>
+<div *ngIf="getError()" class="error">{{ getError() }}</div>
+
+<ng-container *ngIf="!isLoading() && !getError()">
+  <ul *ngIf="hasRequests()">
+    <li *ngFor="let req of getRequests()">
+      <strong>{{ req.to_user_username }}</strong> — {{ req.state }} — {{ req.created_at | date:'short' }}
+    </li>
+  </ul>
+
+  <p *ngIf="showEmpty()">You have not sent any friendship request</p>
+</ng-container>

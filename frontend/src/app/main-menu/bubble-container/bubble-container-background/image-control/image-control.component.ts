@@ -2,7 +2,6 @@ import {
     Component,
     EventEmitter,
     Input,
-    NgZone,
     Output,
     computed,
     effect,
@@ -65,7 +64,6 @@ export class ImageControlComponent {
     uploading = signal(false);
 
     dialog = inject(MatDialog);
-    zone = inject(NgZone);
 
     @Output() imageReady = new EventEmitter<string>();
 

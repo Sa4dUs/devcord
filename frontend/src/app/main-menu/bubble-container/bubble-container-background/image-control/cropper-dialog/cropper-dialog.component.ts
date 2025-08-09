@@ -28,7 +28,6 @@ export type CropperDialogResult = {
 export class CropperDialogComponent {
     data = inject(MAT_DIALOG_DATA) as { image: File };
 
-    // Usa tus constantes directamente
     readonly cropWidth = WIDTH;
     readonly cropHeight = HEIGHT;
     readonly aspectRatio = Math.round((WIDTH / HEIGHT) * 100) / 100;
