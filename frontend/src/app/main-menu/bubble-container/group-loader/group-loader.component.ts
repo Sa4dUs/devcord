@@ -1,30 +1,31 @@
 import { CommonModule, isPlatformBrowser } from "@angular/common";
+import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 import {
     ChangeDetectorRef,
     Component,
     Inject,
-    Input,
+    Output,
     PLATFORM_ID,
 } from "@angular/core";
-import { SERVER_ROUTE } from "../../../environment/environment.secret";
-import { HttpClient, HttpParams } from "@angular/common/http";
-import { ErrorsHandling } from "../../errors/errors";
+import { ErrorsHandling } from "../../../errors/errors";
+import { SERVER_ROUTE } from "../../../../environment/environment.secret";
+import { EventEmitter } from "@angular/core";
 
-const context = "member-list";
+const context = "user-groups";
 
 @Component({
-    selector: "member-list",
-    templateUrl: "./member-list.component.html",
+    selector: "group-loader",
     standalone: true,
     imports: [CommonModule],
-    styleUrl: "./member-list.component.scss",
+    templateUrl: "./group-loader.component.html",
+    styleUrl: "./group-loader.component.scss",
 })
-export class MemberListComponent {
-    @Input() groupId!: string;
+export class GroupLoader {
+    @Output() groupsLoaded = new EventEmitter<{ groupId: string }[]>();
 
     loading = false;
     error: string | null = null;
-    members: { userId: string }[] = [];
+    groups: { groupId: string }[] = [];
 
     constructor(
         private http: HttpClient,
@@ -33,13 +34,11 @@ export class MemberListComponent {
         private cdRef: ChangeDetectorRef,
     ) {}
 
-    ngOnChanges() {
-        if (this.groupId) {
-            this.loadMembers();
-        }
+    ngOnInit(): void {
+        this.loadGroups();
     }
 
-    loadMembers(): void {
+    loadGroups(): void {
         if (!isPlatformBrowser(this.platformId)) {
             this.loading = false;
             return;
@@ -60,31 +59,29 @@ export class MemberListComponent {
         const params = new HttpParams().set("from", "0").set("to", "20");
 
         this.http
-            .get<{ userId: string }[]>(
-                SERVER_ROUTE + "/api/group/" + this.groupId + "/members",
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                    params,
-                },
-            )
+            .get<{ id: string }[]>(SERVER_ROUTE + "/api/group/user-groups", {
+                headers: new HttpHeaders().set(
+                    "Authorization",
+                    `Bearer ${token}`,
+                ),
+                params,
+            })
             .subscribe({
                 next: (data) => {
-                    this.members = data;
+                    this.groups = data.map((group) => ({ groupId: group.id }));
                     this.loading = false;
+                    this.groupsLoaded.emit(this.groups);
                     this.cdRef.detectChanges();
-                    console.log(this.members);
+                    console.log(this.groups);
                 },
                 error: (error) => {
-                    console.error(
-                        "Error with the member list requests:",
-                        error,
-                    );
                     this.errorsMap.getErrorMessage(context, error);
-                    this.error = `Error loading members: ${error.message || error.status}`;
+                    this.error = `Error loading groups: ${error.message || error.status}`;
                     this.loading = false;
                 },
             });
     }
+
     isLoading(): boolean {
         return this.loading;
     }
