@@ -67,16 +67,7 @@ where
                 }
             };
 
-            let route = match config
-                .services
-                .get(prefix)
-                .unwrap()
-                .routes
-                .iter()
-                .find(|r| {
-                    let regex = super::router::path_pattern_to_regex(&r.path);
-                    regex.is_match(subpath)
-                }) {
+            let route = match config.get_route(prefix, subpath) {
                 Some(r) => r,
                 None => return Ok(StatusCode::NOT_FOUND
                     .with_debug(
