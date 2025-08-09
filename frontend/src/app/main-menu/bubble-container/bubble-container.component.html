@@ -1,0 +1,31 @@
+
+<div
+  class="example-boundary"
+  [ngStyle]="{
+    'background': backgroundStyle,
+    'background-size': 'cover',
+    'background-position': 'center',
+    'background-repeat': 'no-repeat'
+  }"
+>
+  <bubble
+    *ngFor="let bubble of bubblesData; let i = index; trackBy: trackById"
+    [boundarySelector]="boundarySelector"
+    [id]="bubble.id"
+    [isColliding]="bubble.isColliding"
+    [isDragging]="bubble.isDragging"
+    [x]="bubble.x"
+    [y]="bubble.y"
+    (dragStateChanged)="onBubbleDragStateChanged(i, $event)"
+    (positionChanged)="onBubbleMoved(i, $event)"
+  ></bubble>
+</div>
+
+<div class="actions">
+  <button (click)="addBubble()">Add Bubble</button>
+</div>
+
+<bubble-container-background
+  #bgManager
+  (backgroundSelected)="onBackgroundSelected($event)"
+></bubble-container-background>
