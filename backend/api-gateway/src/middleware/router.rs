@@ -70,10 +70,7 @@ where
                 }
             };
 
-            let route = match service.routes.iter().find(|r| {
-                let regex = path_pattern_to_regex(&r.path);
-                regex.is_match(subpath)
-            }) {
+            let route = match service.get_route(subpath) {
                 Some(r) => r,
                 None => {
                     return Ok(StatusCode::NOT_FOUND
