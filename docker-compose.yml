@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   frontend:
     build:
@@ -13,7 +15,7 @@ services:
     environment:
       - NODE_ENV
       - CHOKIDAR_USEPOLLING=true
-  
+
   api-gateway:
     build:
       context: ./backend/api-gateway
@@ -25,6 +27,178 @@ services:
     networks:
       - backend
 
+  auth-service:
+    build:
+      context: ./backend
+      dockerfile: ./auth-service/Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - CARGO_ENV
+      - AUTH_DATABASE_URL=postgres://postgres:password@auth-db:5432/psqldb
+      - JWT_SECRET="justalongenoughkeyforhs256algorithm"
+      - DB_MAX_CONNECTIONS= 5
+      - DB_POOL_TIMEOUT_SECS=3
+      - RUST_LOG=info
+    networks:
+      - backend
+
+  auth-db:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: psqldb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  call-service:
+    build:
+      context: ./backend/call-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  group-service:
+    build:
+      context: ./backend/group-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  message-service:
+    build:
+      context: ./backend/message-service
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  notification-service:
+    build:
+      context: ./backend/notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  presence-service:
+    build:
+      context: ./backend/presence-service
+      dockerfile: Dockerfile
+    ports:
+      - "3006:3000"
+    environment:
+      - CARGO_ENV
+    networks:
+      - backend
+
+  user-service:
+    build:
+      context: ./backend
+      dockerfile: ./user-service/Dockerfile
+    ports:
+      - "3007:3000"
+    environment:
+      - CORS_ORIGIN=http://localhost:3000
+      - DATABASE_URL=postgres://postgres:password@user-db:5432/psqldb
+      - SOCKET_ADDR=0.0.0.0:3000
+      - FLUVIO_ADDR=sc:9003
+      - PRODUCER_TOPIC=user
+      - CONSUMER_TOPIC=auth
+      - JWT_SECRET=justalongenoughkeyforhs256algorithm
+      - CARGO_ENV
+    networks:
+      - backend
+    depends_on:
+      - sc
+      - spu
+  
+  user-db:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: psqldb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  sc:
+    image: infinyon/fluvio:stable
+    container_name: sc
+    hostname: sc
+    ports:
+      - "9103:9003"
+    environment:
+      - RUST_LOG=info
+    command: "./fluvio-run sc --local /fluvio/metadata"
+    volumes:
+      - ./backend/fluvio/fluvio-metadata:/fluvio/metadata
+    networks:
+      - backend
+
+  sc-setup:
+    build:
+      context: ./backend/fluvio
+      dockerfile: Dockerfile
+    container_name: sc-setup
+    environment:
+      - RUST_LOG=info
+    entrypoint: >
+      /bin/sh -c "
+      fluvio profile add docker sc:9003 docker;
+      fluvio cluster spu register --id 5001 -p spu:9010 --private-server spu:9011;
+      exit 0;
+      "
+    depends_on:
+      - sc
+    networks:
+      - backend
+
+  spu:
+    image: infinyon/fluvio:stable
+    container_name: spu
+    hostname: spu
+    volumes:
+      - ./backend/fluvio/fluvio-data:/fluvio/data
+    environment:
+      - RUST_LOG=info
+    ports:
+      - "9110:9010"
+      - "9111:9011"
+    command: "./fluvio-run spu -i 5001 -p spu:9010 -v spu:9011 --sc-addr sc:9004 --log-base-dir /fluvio/data"
+    depends_on:
+      - sc
+    networks:
+      - backend
+
 networks:
   backend:
     driver: bridge
+
+volumes:
+  pgdata:
