@@ -1,9 +1,12 @@
-<h2>LogOut</h2>
+<dialog #logoutDialog>
+  <h2>Cerrar sesión apagará el respirador a un pingüino enfermo. ¿Estás seguro de hacerlo?</h2>
 
-<button (click)="onSubmitLogOut()" [disabled]="loading">
-  {{ loading ? "Cerrando sesión..." : "Cerrar sesión" }}
-</button>
+  <button (click)="onSubmitLogOut()" [disabled]="loading">
+    {{ loading ? "Cerrando sesión..." : "Odio a los pingüinos" }}
+  </button>
+  <button (click)="closeDialog()">No</button>
 
-@if (errorMessage) {
-  <p class="error">{{ errorMessage }}</p>
-}
+  @if (errorMessage) {
+    <p class="error">{{ errorMessage }}</p>
+  }
+</dialog>
