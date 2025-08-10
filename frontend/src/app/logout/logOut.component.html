@@ -4,4 +4,6 @@
   {{ loading ? "Cerrando sesión..." : "Cerrar sesión" }}
 </button>
 
-<p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+@if (errorMessage) {
+  <p class="error">{{ errorMessage }}</p>
+}
