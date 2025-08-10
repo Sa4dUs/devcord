@@ -7,7 +7,7 @@ import { LogOutComponent } from "../../logout/logOut.component"; //seguro que lo
 @Component({
     selector: "app-user",
     standalone: true,
-    imports: [RouterModule, LogOutComponent], 
+    imports: [RouterModule, LogOutComponent],
     templateUrl: "./user.component.html",
     styleUrls: ["./user.component.scss"],
 })
