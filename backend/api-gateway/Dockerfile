@@ -2,8 +2,8 @@ FROM rust:1.87 AS builder
 
 WORKDIR /usr/src/app
 
-COPY ./api-gateway/Cargo.toml ./api-gateway/Cargo.lock ./
-COPY ./api-gateway/src ./src
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
 
 ARG BUILD_MODE=release
 
