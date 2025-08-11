@@ -1,0 +1,14 @@
+<a href="#" (click)="openDialog($event)">Logout</a>
+
+<dialog #logoutDialog>
+    <p>Are you sure you want to logout?</p>
+
+    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
+    <menu>
+        <button (click)="onSubmitLogOut()" [disabled]="loading">
+            {{ loading ? "Logging out..." : "Confirm" }}
+        </button>
+        <button (click)="closeDialog()" [disabled]="loading">Cancel</button>
+    </menu>
+</dialog>
