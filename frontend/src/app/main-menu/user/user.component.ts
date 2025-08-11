@@ -2,11 +2,12 @@ import { Component, OnInit, inject } from "@angular/core";
 import { RouterModule } from "@angular/router";
 import { isPlatformBrowser } from "@angular/common";
 import { PLATFORM_ID } from "@angular/core";
+import { LogoutComponent } from "../../logout/logout.component";
 
 @Component({
     selector: "app-user",
     standalone: true,
-    imports: [RouterModule],
+    imports: [RouterModule, LogoutComponent],
     templateUrl: "./user.component.html",
     styleUrls: ["./user.component.scss"],
 })
