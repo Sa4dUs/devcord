@@ -6,7 +6,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
 import { ErrorsHandling } from "../errors/errors";
 import { SERVER_ROUTE } from "../../environment/environment.secret";
 
-const context = "login";
+const context = "log-in";
 @Component({
     selector: "log-in",
     standalone: true,
