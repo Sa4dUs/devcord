@@ -1,6 +1,5 @@
 import { Component } from "@angular/core";
 import { RouterModule } from "@angular/router";
-import { ErrorsHandling } from "./errors/errors";
 
 @Component({
     selector: "app-root",
@@ -12,5 +11,5 @@ import { ErrorsHandling } from "./errors/errors";
 export class App {
     protected title = "frontend";
 
-    constructor(private errorsMap: ErrorsHandling) {}
+    constructor() {}
 }

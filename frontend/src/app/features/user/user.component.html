@@ -1,0 +1,16 @@
+<p><strong>Name:</strong> {{ user.username }}</p>
+<p><strong>Email:</strong> {{ user.email }}</p>
+<p><strong>Phone:</strong> {{ user.telephone || "Not provided" }}</p>
+
+<div class="personal-container">
+    <a routerLink="/user/friendship/request">Send Friend Request</a>
+    <a routerLink="/user/friendship/received">Received Requests</a>
+    <a routerLink="/user/friendship/sent">Sent Requests</a>
+    <a routerLink="/user/friendship/friend">Friends List</a>
+    <a routerLink="/user/blocking/block">Block User</a>
+    <a routerLink="/user/blocking/unblock">Unblock User</a>
+    <a routerLink="/user/update">Update</a>
+    <app-logout></app-logout>
+</div>
+
+<router-outlet></router-outlet>
