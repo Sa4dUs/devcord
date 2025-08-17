@@ -8,24 +8,53 @@ use axum::{
 };
 use dashmap::DashMap;
 use sqlx::{PgPool, postgres::PgPoolOptions, prelude::FromRow};
-use tokio::{net::TcpListener, sync::Mutex};
+use tokio::{
+    net::TcpListener,
+    sync::{Mutex, mpsc},
+};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing::{debug, info};
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{room::Room, user_ws::handle_upgrade};
 
+pub type RoomID = String;
+#[derive(Debug, Clone)]
+pub enum AppStateMessage {
+    RoomClosed(RoomID),
+    AppClosed,
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub rooms: Arc<DashMap<String, Arc<Mutex<Room>>>>,
     pool: PgPool,
+    pub sender: mpsc::Sender<AppStateMessage>,
 }
 
 impl AppState {
     async fn new(db: PgPool) -> AppState {
+        let rooms: Arc<DashMap<String, Arc<Mutex<Room>>>> = Default::default();
+        let (tx, mut rx) = mpsc::channel(10);
+
+        {
+            let rooms = rooms.clone();
+            tokio::spawn(async move {
+                while let Some(msg) = rx.recv().await {
+                    match msg {
+                        AppStateMessage::RoomClosed(id) => {
+                            rooms.remove(&id);
+                        }
+                        AppStateMessage::AppClosed => return,
+                    }
+                }
+            });
+        }
+
         AppState {
-            rooms: Default::default(),
+            rooms,
             pool: db,
+            sender: tx,
         }
     }
 
@@ -34,7 +63,7 @@ impl AppState {
             return Ok(room.clone());
         }
 
-        let room = get_room_from_db(&self.pool, room_id).await?;
+        let room = get_room_from_db(&self.pool, room_id, self.sender.clone()).await?;
 
         debug!("Room from database: {:?}", room);
 
@@ -49,7 +78,11 @@ impl AppState {
     }
 }
 
-async fn get_room_from_db(db: &PgPool, room_id: &str) -> sqlx::Result<Room> {
+async fn get_room_from_db(
+    db: &PgPool,
+    room_id: &str,
+    sender: mpsc::Sender<AppStateMessage>,
+) -> sqlx::Result<Room> {
     debug!("Searching for db room: {}", room_id);
     let users: Vec<String> = sqlx::query_scalar(
         "
@@ -66,7 +99,7 @@ async fn get_room_from_db(db: &PgPool, room_id: &str) -> sqlx::Result<Room> {
 
     debug!("Room Users: {:?}", users);
 
-    Ok(Room::new(users).await)
+    Ok(Room::new(users, sender, room_id.to_string()).await)
 }
 
 async fn init(db: &PgPool) {
@@ -106,7 +139,7 @@ async fn init(db: &PgPool) {
     .unwrap();
 }
 
-pub async fn app() -> anyhow::Result<Router> {
+pub async fn app() -> anyhow::Result<(Router, mpsc::Sender<AppStateMessage>)> {
     let trace_layer = TraceLayer::new_for_http();
 
     tracing_subscriber::registry()
@@ -153,7 +186,7 @@ pub async fn app() -> anyhow::Result<Router> {
     init(&db).await;
 
     let app_state = Arc::new(AppState::new(db).await);
-
+    let sender = app_state.sender.clone();
     let app = Router::new()
         .route("/health", get(|| async { "Viva el imperio Mongol!" }))
         .route("/", get(handle_upgrade))
@@ -161,15 +194,16 @@ pub async fn app() -> anyhow::Result<Router> {
         .layer(cors_layer)
         .with_state(app_state);
 
-    Ok(app)
+    Ok((app, sender))
 }
 
-pub async fn run(app: Router) -> anyhow::Result<()> {
+pub async fn run(app: Router, sender: mpsc::Sender<AppStateMessage>) -> anyhow::Result<()> {
     let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
 
     info!("Server running on 0.0.0.0:3000");
 
     axum::serve(listener, app).await?;
 
+    sender.send(AppStateMessage::AppClosed).await?;
     Ok(())
 }

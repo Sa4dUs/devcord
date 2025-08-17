@@ -76,7 +76,7 @@ async fn handle_ws(ws: WebSocket, state: Arc<AppState>, claims: Claims) {
             room_tx.send(msg).await.unwrap(); //TODO! :D
         }
 
-        let msg = WSFromUserMessage::UserDisconected {
+        let msg = WSFromUserMessage::Disconected {
             user_id: Arc::new(claims.user_id),
         };
         room_tx.send(msg).await.unwrap(); //TODO! Pray this doesnt break

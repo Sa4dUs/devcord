@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt, sync::Arc, vec};
+use std::{collections::HashSet, fmt, sync::Arc, time::Duration, vec};
 
 use anyhow::Result;
 use axum::extract::ws::Message;
@@ -31,6 +31,8 @@ use webrtc::{
     },
 };
 
+use crate::app::{AppStateMessage, RoomID};
+
 type UserID = Arc<String>;
 type TrackMap = Arc<DashMap<PacketIdentifier, TrackInfo>>;
 type ActiveUsersMap = Arc<DashMap<UserID, UserInfo>>;
@@ -47,7 +49,7 @@ pub enum WSFromUserMessage {
     RTCOffer { offer: RTCSessionDescription },
     RTCAnswer { answer: RTCSessionDescription },
     RTCCandidate { candidate: RTCIceCandidateInit },
-    UserDisconected { user_id: UserID },
+    Disconected { user_id: UserID },
     ConnectToRoom { room_id: String },
 }
 
@@ -82,7 +84,7 @@ pub enum RoomInfo {
     },
 }
 
-#[derive(Debug, Hash, PartialEq, Eq)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
 pub struct PacketIdentifier {
     sender: UserID,
     track_id: String,
@@ -134,7 +136,11 @@ pub struct Room {
 }
 
 impl Room {
-    pub async fn new(allowed_users: Vec<String>) -> Room {
+    pub async fn new(
+        allowed_users: Vec<String>,
+        sender: mpsc::Sender<AppStateMessage>,
+        id: RoomID,
+    ) -> Room {
         let mut allowed_users_set = HashSet::default();
         for user in allowed_users {
             allowed_users_set.insert(user);
@@ -149,6 +155,8 @@ impl Room {
             broadcast_sender.clone(),
             info_receiver,
             active_users.clone(),
+            sender,
+            id,
         );
 
         Room {
@@ -166,7 +174,9 @@ impl Room {
         mpsc::Sender<WSFromUserMessage>,
         mpsc::Receiver<WSInnerUserMessage>,
     )> {
-        if !self.allowed_users.contains(user_id) {
+        if !self.allowed_users.contains(user_id)
+            || self.active_users.contains_key(&user_id.to_string())
+        {
             return Err(Error::UserNotAllowedInRoom.into());
         }
 
@@ -213,6 +223,8 @@ fn create_room_controller_thread(
     broadcast_sender: broadcast::Sender<TrackPacket>,
     mut info_receiver: mpsc::Receiver<RoomInfo>,
     active_users: ActiveUsersMap,
+    controller_sender: mpsc::Sender<AppStateMessage>,
+    id: RoomID,
 ) {
     tokio::spawn(async move {
         while let Some(info) = info_receiver.recv().await {
@@ -268,37 +280,51 @@ fn create_room_controller_thread(
                     if active_users.is_empty() {
                         info_receiver.close();
                         debug!("ROOM CLOSED");
-                        return; //TODO! Do close sequence
+                        break; //TODO! Do close sequence
                     }
                 }
                 RoomInfo::UserDisconected { user_id } => {
-                    let Some(user_info) = active_users.get(&user_id) else {
-                        continue;
-                    };
-
-                    for track in user_info.user_tracks.iter() {
-                        let identifier = PacketIdentifier {
-                            sender: user_id.clone(),
-                            track_id: track.id(),
+                    {
+                        let Some(user_info) = active_users.get(&user_id) else {
+                            continue;
                         };
-                        let msg = TrackPacket::Closed(Arc::new(identifier));
-                        broadcast_sender.send(msg).unwrap(); //TODO!
+
+                        debug!("USER DISCONECTED INFO: {:?}", user_info);
+                        debug!("USER INFO TRACKS: {:?}", user_info.user_tracks);
+
+                        for track in user_info.user_tracks.iter() {
+                            let identifier = PacketIdentifier {
+                                sender: user_id.clone(),
+                                track_id: track.id(),
+                            };
+                            debug!("BROADCASTING DESCONNECTION FOR: {:?}", identifier);
+                            let msg = TrackPacket::Closed(Arc::new(identifier.clone()));
+                            broadcast_sender.send(msg).unwrap(); //TODO!
+                            debug!("BROADCASTED DESCONNECTION FOR: {:?}", identifier);
+                        }
+                        debug!("FINISHED BROADCASTING LOOP");
+
+                        user_info.connection.close().await.unwrap(); //TODO! ?
                     }
 
-                    user_info.connection.close().await.unwrap(); //TODO! ?
-
-                    active_users.remove(&user_id);
+                    let removed = active_users.remove(&user_id);
+                    debug!("REMOVED USER BECAUSE OF DISCONNECTION: {:?}", removed);
+                    debug!("{:?} USERS LEFT", active_users.len());
 
                     if active_users.is_empty() {
                         info_receiver.close();
                         debug!("ROOM CLOSED");
-                        return; //TODO! Do close sequence
+                        break; //TODO! Do close sequence
                     }
                 }
             }
         }
 
-        debug!("ROOM CLOSED WEIRD WAY");
+        controller_sender
+            .send(AppStateMessage::RoomClosed(id))
+            .await
+            .unwrap(); //TODO!
+        debug!("ROOM SENT TO REMOVE");
     });
 }
 
@@ -364,21 +390,24 @@ fn create_ws_listener_thread(
 ) {
     tokio::spawn(async move {
         while let Some(msg) = receiver.recv().await {
-            debug!("WSMSG: {:?}", msg);
             match msg {
                 WSFromUserMessage::RTCOffer { offer } => {
+                    debug!("WSMSG OFFER");
                     pc.set_remote_description(offer).await.unwrap(); //TODO! This error is important
                 }
                 WSFromUserMessage::RTCAnswer { answer } => {
+                    debug!("WSMSG ANSWER");
                     pc.set_remote_description(answer).await.unwrap(); //TODO! This error is important
                 }
                 WSFromUserMessage::RTCCandidate { candidate } => {
+                    debug!("WSMSG CANDIDATE");
                     if pc.current_remote_description().await.is_none() {
                         continue;
                     }
                     pc.add_ice_candidate(candidate).await.unwrap(); //TODO! This error is important
                 }
-                WSFromUserMessage::UserDisconected { user_id } => {
+                WSFromUserMessage::Disconected { user_id } => {
+                    debug!("WSMSG DISCONECTED: {:?}", user_id);
                     let msg = RoomInfo::UserDisconected { user_id };
                     info_sender.send(msg).await.unwrap(); //TODO! Probs just ignore
                 }
@@ -461,7 +490,10 @@ fn setup_on_track(
             info_sender.send(info).await.unwrap(); //TODO!
 
             debug!("On track started reading");
-            while let Ok((packet, _)) = track.read_rtp().await {
+            while let Ok(Ok((packet, _))) =
+                tokio::time::timeout(Duration::from_secs(5), track.read_rtp()).await
+            {
+                //TODO! Change this timeout for an env or something idk
                 let identifier = identifier.clone();
                 let packet = UserPacket { identifier, packet };
                 let packet = Arc::new(packet);
