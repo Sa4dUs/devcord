@@ -1,3 +1,8 @@
 <h1>{{ groupId }}</h1>
 
-<member-list [groupId]="groupId"></member-list>
+<member-list [groupId]="groupId" (eventMembersLoaded)="activateMembersLoaded($event)"></member-list>
+
+
+@defer (when membersLoaded) {
+  <delete-user [members]="members" [groupId]="groupId"></delete-user>
+}

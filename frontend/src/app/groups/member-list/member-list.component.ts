@@ -2,8 +2,10 @@ import { CommonModule, isPlatformBrowser } from "@angular/common";
 import {
     ChangeDetectorRef,
     Component,
+    EventEmitter,
     Inject,
     Input,
+    Output,
     PLATFORM_ID,
 } from "@angular/core";
 import { SERVER_ROUTE } from "../../../environment/environment.secret";
@@ -21,6 +23,7 @@ const context = "member-list";
 })
 export class MemberListComponent {
     @Input() groupId!: string;
+    @Output() eventMembersLoaded = new EventEmitter<{ userId: string }[]>();
 
     loading = false;
     error: string | null = null;
@@ -73,6 +76,7 @@ export class MemberListComponent {
                     this.loading = false;
                     this.cdRef.detectChanges();
                     console.log(this.members);
+                    this.eventMembersLoaded.emit(this.members);
                 },
                 error: (error) => {
                     console.error(
