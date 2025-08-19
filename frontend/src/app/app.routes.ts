@@ -11,6 +11,7 @@ import { FriendshipFriendComponent } from "./main-menu/user/personal-user/friend
 import { BlockComponent } from "./main-menu/user/personal-user/blocking/block/block.component";
 import { UnblockComponent } from "./main-menu/user/personal-user/blocking/unblock/unblock.component";
 import { UpdateUsernameComponent } from "./main-menu/user/personal-user/update/update.component";
+import { GroupComponent } from "./groups/group.component";
 
 export const routes: Routes = [
     { path: "register", component: RegisterComponent },
@@ -25,6 +26,7 @@ export const routes: Routes = [
     { path: "blocks-unblock", component: UnblockComponent },
     { path: "update", component: UpdateUsernameComponent },
     { path: "main-menu", component: MainMenuComponent },
+    { path: "group/:groupId", component: GroupComponent },
 
     { path: "", redirectTo: "home", pathMatch: "full" },
 ];
