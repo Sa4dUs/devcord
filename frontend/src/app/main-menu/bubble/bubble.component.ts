@@ -7,6 +7,7 @@ import {
     AfterViewInit,
     OnChanges,
     SimpleChanges,
+    inject,
 } from "@angular/core";
 import {
     CdkDragEnd,
@@ -15,6 +16,7 @@ import {
     CdkDragMove,
 } from "@angular/cdk/drag-drop";
 import { BUBBLESIZE } from "../main-menuConstants";
+import { Router } from "@angular/router";
 
 @Component({
     selector: "bubble",
@@ -24,18 +26,20 @@ import { BUBBLESIZE } from "../main-menuConstants";
     imports: [CdkDrag],
 })
 export class BubbleComponent implements AfterViewInit, OnChanges {
-    @Input() id!: number;
+    @Input() id!: string;
     @Input() boundarySelector = "";
     @Input() isColliding = false;
-    @Input() isDragging = false;
     @Input() x = 0;
     @Input() y = 0;
 
     @Output() positionChanged = new EventEmitter<{ x: number; y: number }>();
     @Output() dragStateChanged = new EventEmitter<boolean>();
-    @Output() clicked = new EventEmitter<void>();
 
     bubblesize = BUBBLESIZE;
+
+    private fakeClick = false;
+    private dragOccurred = false;
+    private router = inject(Router);
 
     constructor(private el: ElementRef) {}
 
@@ -51,21 +55,47 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
         }
     }
 
-    onClick() {
-        if (!this.isDragging) {
-            this.clicked.emit();
+    onClick(event: MouseEvent) {
+        if (this.fakeClick) {
+            this.fakeClick = false;
+            return;
         }
+        if (this.dragOccurred) {
+            event.stopImmediatePropagation();
+            return;
+        }
+        this.router.navigate(["/group", this.id]);
     }
-    //Probably the events are need to improve how it works
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line
     onDragStarted(event: CdkDragStart) {
-        this.isDragging = true;
+        this.dragOccurred = false;
         this.addDragAnimation();
         this.dragStateChanged.emit(true);
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
+    onDragMoved(event: CdkDragMove) {
+        this.dragOccurred = true;
+        const pos = event.pointerPosition;
+        const boundaryEl = document.querySelector(this.boundarySelector);
+
+        if (boundaryEl) {
+            const rect = boundaryEl.getBoundingClientRect();
+            let newX = pos.x - rect.left - this.bubblesize / 2;
+            let newY = pos.y - rect.top - this.bubblesize / 2;
+
+            newX = Math.min(Math.max(newX, 0), rect.width - this.bubblesize);
+            newY = Math.min(Math.max(newY, 0), rect.height - this.bubblesize);
+
+            this.x = newX;
+            this.y = newY;
+
+            this.setPosition();
+            this.emitPosition();
+        }
+    }
+    //I think event will be useful eventually
+    // eslint-disable-next-line
     onDragEnded(event: CdkDragEnd) {
-        this.isDragging = false;
         this.removeDragAnimation();
         this.dragStateChanged.emit(false);
 
@@ -78,27 +108,8 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
         }
 
         this.emitPosition();
-    }
-
-    onDragMoved(event: CdkDragMove) {
-        const pos = event.pointerPosition;
-
-        const boundaryEl = document.querySelector(this.boundarySelector);
-        if (boundaryEl) {
-            const rect = boundaryEl.getBoundingClientRect();
-
-            let newX = pos.x - rect.left - 50;
-            let newY = pos.y - rect.top - 50;
-
-            newX = Math.min(Math.max(newX, 0), rect.width - 100);
-            newY = Math.min(Math.max(newY, 0), rect.height - 100);
-
-            this.x = newX;
-            this.y = newY;
-
-            this.setPosition();
-            this.emitPosition();
-        }
+        this.dragOccurred = false;
+        this.fakeClick = true;
     }
 
     private emitPosition() {
@@ -116,21 +127,16 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
 
     private addDragAnimation() {
         const el = this.el.nativeElement.querySelector(".bubble");
-        if (el) {
-            el.classList.add("dragging");
-        }
+        el?.classList.add("dragging");
     }
 
     private removeDragAnimation() {
         const el = this.el.nativeElement.querySelector(".bubble");
-        if (el) {
-            el.classList.remove("dragging");
-        }
+        el?.classList.remove("dragging");
     }
-    setBubbleSizeVariable() {
+
+    private setBubbleSizeVariable() {
         const el = this.el.nativeElement.querySelector(".bubble");
-        if (el) {
-            el.style.setProperty("--bubblesize", this.bubblesize.toString());
-        }
+        el?.style.setProperty("--bubblesize", this.bubblesize.toString());
     }
 }

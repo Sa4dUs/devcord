@@ -1,0 +1,29 @@
+//Chat GPT
+.user-checkbox {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+  font-family: sans-serif;
+  background-color: #f9f9f9;
+}
+
+.user-checkbox:hover {
+  background-color: #eaeaea;
+}
+
+.user-checkbox input[type="checkbox"] {
+  margin-right: 0.75rem;
+  transform: scale(1.2);
+  accent-color: #3f51b5; /* Material Indigo */
+}
+
+.user-name {
+  font-size: 1rem;
+  color: #333;
+}

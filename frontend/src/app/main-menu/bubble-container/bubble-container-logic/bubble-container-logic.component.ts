@@ -1,9 +1,9 @@
 import { HEIGHT, WIDTH, BUBBLESIZE } from "../../main-menuConstants";
 
-///TODO: IMPROVE THE COLLISIONS
+///TODO: @AlexGarciaPrada The corners are still problematic
 
 export interface BubbleData {
-    id: number;
+    id: string;
     isColliding: boolean;
     isDragging: boolean;
     x: number;
@@ -15,8 +15,6 @@ export interface BubbleData {
 export class BubbleContainerLogic {
     readonly maxIterations = 15;
 
-    constructor() {}
-
     clampPosition(x: number, y: number) {
         const maxX = WIDTH - BUBBLESIZE;
         const maxY = HEIGHT - BUBBLESIZE;
@@ -27,31 +25,12 @@ export class BubbleContainerLogic {
         };
     }
 
-    isColliding(a: DOMRect, b: DOMRect): boolean {
-        return !(
-            a.right <= b.left ||
-            a.left >= b.right ||
-            a.bottom <= b.top ||
-            a.top >= b.bottom
-        );
-    }
+    isColliding(a: BubbleData, b: BubbleData): boolean {
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-    generateRect(x: number, y: number): DOMRect {
-        return {
-            x,
-            y,
-            width: BUBBLESIZE,
-            height: BUBBLESIZE,
-            left: x,
-            top: y,
-            right: x + BUBBLESIZE,
-            bottom: y + BUBBLESIZE,
-            toJSON: () => ({}),
-        } as DOMRect;
-    }
-
-    updateRects(bubbles: BubbleData[]): DOMRect[] {
-        return bubbles.map((b) => this.generateRect(b.x, b.y));
+        return distance < BUBBLESIZE;
     }
 
     checkCollisions(bubblesData: BubbleData[]) {
@@ -62,26 +41,23 @@ export class BubbleContainerLogic {
         }
 
         for (let iter = 0; iter < this.maxIterations; iter++) {
-            const bubbleRects = this.updateRects(bubblesData);
             let anyCollision = false;
 
             for (let i = 0; i < bubblesData.length; i++) {
                 for (let j = i + 1; j < bubblesData.length; j++) {
-                    const rectA = bubbleRects[i];
-                    const rectB = bubbleRects[j];
+                    const bubbleA = bubblesData[i];
+                    const bubbleB = bubblesData[j];
 
-                    if (this.isColliding(rectA, rectB)) {
+                    if (this.isColliding(bubbleA, bubbleB)) {
                         anyCollision = true;
-                        const bubbleA = bubblesData[i];
-                        const bubbleB = bubblesData[j];
 
                         bubbleA.isColliding = true;
                         bubbleB.isColliding = true;
 
-                        const centerAX = rectA.left + BUBBLESIZE / 2;
-                        const centerAY = rectA.top + BUBBLESIZE / 2;
-                        const centerBX = rectB.left + BUBBLESIZE / 2;
-                        const centerBY = rectB.top + BUBBLESIZE / 2;
+                        const centerAX = bubbleA.x + BUBBLESIZE / 2;
+                        const centerAY = bubbleA.y + BUBBLESIZE / 2;
+                        const centerBX = bubbleB.x + BUBBLESIZE / 2;
+                        const centerBY = bubbleB.y + BUBBLESIZE / 2;
 
                         const dx = centerBX - centerAX;
                         const dy = centerBY - centerAY;

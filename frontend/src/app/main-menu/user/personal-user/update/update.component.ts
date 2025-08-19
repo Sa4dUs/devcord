@@ -28,7 +28,6 @@ export class UpdateUsernameComponent {
 
     updateUsername(): void {
         if (!isPlatformBrowser(this.platformId)) {
-            console.log("You're not in browser");
             return;
         }
 
@@ -64,7 +63,6 @@ export class UpdateUsernameComponent {
             })
             .subscribe({
                 next: () => {
-                    console.log("Username succesfully updated");
                     this.success.set(
                         `Your new username is "${usernameTrimmed}"`,
                     );

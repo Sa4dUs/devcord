@@ -145,7 +145,6 @@ export class FriendRequestsComponent implements OnInit {
             })
             .subscribe({
                 next: () => {
-                    console.log("You have rejected succesfully");
                     this.loadFriendRequests();
                 },
                 error: (error) => {
