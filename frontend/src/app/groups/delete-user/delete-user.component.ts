@@ -1,6 +1,6 @@
 import { Component, inject, Input } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { MemberSelectorDialogComponent } from "./member-selector-dialog/member-selector-dialog.component";
+import { DeleteUserDialogComponent } from "./delete-user-dialog/delete-user-dialog.component";
 
 @Component({
     selector: "delete-user",
@@ -14,7 +14,7 @@ export class DeleteUserComponent {
     @Input() groupId!: string;
     dialog = inject(MatDialog);
 
-    openMemberSelectorDialog() {
+    openDeleteUserDialog() {
         console.log(this.members);
         const dialogConfig = new MatDialogConfig();
         dialogConfig.width = "500px";
@@ -23,6 +23,6 @@ export class DeleteUserComponent {
             groupId: this.groupId,
         };
 
-        this.dialog.open(MemberSelectorDialogComponent, dialogConfig);
+        this.dialog.open(DeleteUserDialogComponent, dialogConfig);
     }
 }

@@ -18,7 +18,7 @@ import { Router } from "@angular/router";
 const context = "remove-user";
 
 @Component({
-    selector: "member-selector-dialog",
+    selector: "delete-user-dialog",
     standalone: true,
     imports: [
         CommonModule,
@@ -26,10 +26,10 @@ const context = "remove-user";
         MatDialogModule,
         ReactiveFormsModule,
     ],
-    templateUrl: "./member-selector-dialog.component.html",
-    styleUrls: ["./member-selector-dialog.component.scss"],
+    templateUrl: "./delete-user-dialog.component.html",
+    styleUrls: ["./delete-user-dialog.component.scss"],
 })
-export class MemberSelectorDialogComponent {
+export class DeleteUserDialogComponent {
     members: { userId: string }[] = [];
     error: string = "";
     selectedUser: string = "";

@@ -2,11 +2,18 @@ import { Component } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
 import { MemberListComponent } from "./member-list/member-list.component";
 import { DeleteUserComponent } from "./delete-user/delete-user.component";
+import { AddUserComponent } from "./add-user/add-user.component";
+import { CommonModule } from "@angular/common";
 
 @Component({
     selector: "group",
     standalone: true,
-    imports: [MemberListComponent, DeleteUserComponent],
+    imports: [
+        MemberListComponent,
+        DeleteUserComponent,
+        AddUserComponent,
+        CommonModule,
+    ],
     templateUrl: "./group.component.html",
     styleUrls: ["./group.component.scss"],
 })
