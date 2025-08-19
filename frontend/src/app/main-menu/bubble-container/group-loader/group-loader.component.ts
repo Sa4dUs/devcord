@@ -72,7 +72,6 @@ export class GroupLoader {
                     this.loading = false;
                     this.groupsLoaded.emit(this.groups);
                     this.cdRef.detectChanges();
-                    console.log(this.groups);
                 },
                 error: (error) => {
                     this.errorsMap.getErrorMessage(context, error);

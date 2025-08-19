@@ -1,7 +1,6 @@
 
 
 <ng-container *ngIf="users.length > 0">
-  <pre>{{ users | json }}</pre>
   <div *ngFor="let user of users; let i = index">
 
     <group-user-checkbox 

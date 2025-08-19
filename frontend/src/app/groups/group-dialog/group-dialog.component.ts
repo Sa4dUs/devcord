@@ -1,6 +1,12 @@
 import { isPlatformBrowser } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, inject, Inject, PLATFORM_ID } from "@angular/core";
+import {
+    Component,
+    inject,
+    Inject,
+    PLATFORM_ID,
+    ViewChild,
+} from "@angular/core";
 import {
     MAT_DIALOG_DATA,
     MatDialogModule,
@@ -25,7 +31,7 @@ export enum HttpOperation {
 }
 
 export interface GroupDialogInterface {
-    groupId: string;
+    groupId?: string;
     title: string;
     route: string;
     users: string[];
@@ -34,6 +40,7 @@ export interface GroupDialogInterface {
     uniqueAnswer?: boolean; // In default is not unique answer, puto Marcelo, pq se borran usuarios de uno en uno
     context?: string;
     styleUrl?: string;
+    jsonField?: string;
 }
 @Component({
     selector: "group-dialog.component",
@@ -48,14 +55,21 @@ export class GroupDialogComponent {
     data = inject<GroupDialogInterface>(MAT_DIALOG_DATA);
     private router = inject(Router);
     selection: string[] = [];
+    uniqueAnswer = this.data.uniqueAnswer ?? false;
+
+    @ViewChild(GroupUserListComponent)
+    groupUserList!: GroupUserListComponent;
 
     constructor(
         private http: HttpClient,
         @Inject(PLATFORM_ID) private platformId: object,
         private errorsMap: ErrorsHandling,
     ) {}
-
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     onSubmitGroupDialog() {
+        this.selection = [...this.groupUserList.selections];
+        console.log(this.selection);
+
         if (!isPlatformBrowser(this.platformId)) {
             return;
         }
@@ -66,43 +80,51 @@ export class GroupDialogComponent {
             console.error("There is no token");
             return;
         }
-        const url =
-            SERVER_ROUTE +
-            "/api/group/" +
-            this.data.groupId +
-            "/" +
-            this.data.route;
+        const url = SERVER_ROUTE + "/api/group/" + this.data.route;
         const headers = {
             Authorization: `Bearer ${token}`,
         };
 
-        let request: Observable<{ groupId: string }>;
+        let payload: any = {};
+
+        if (this.data.jsonField && this.selection.length > 0) {
+            const key = this.data.jsonField;
+
+            if (this.data.uniqueAnswer) {
+                payload[key] = this.selection[0];
+            } else {
+                payload[key] = this.selection;
+            }
+        }
+        console.log(payload);
+
+        if (Object.keys(payload).length === 0) {
+            console.error("No data to send, skipping request.");
+            return;
+        }
+        console.log(payload);
+
+        let request: Observable<any>;
 
         switch (this.data.httpOperation) {
             case HttpOperation.POST:
-                request = this.http.post<{ groupId: string }>(
-                    url,
-                    { user_ids: this.selection },
-                    { headers },
-                );
+                request = this.http.post<any>(url, payload, { headers });
                 break;
 
             case HttpOperation.PUT:
-                request = this.http.put<{ groupId: string }>(
-                    url,
-                    { member_ids: this.selection },
-                    { headers },
-                );
+                request = this.http.put<any>(url, payload, { headers });
                 break;
 
             case HttpOperation.DELETE:
-                request = this.http.delete<{ groupId: string }>(url, {
+                request = this.http.delete<any>(url, {
                     headers,
                 });
                 break;
 
             case HttpOperation.GET:
-                request = this.http.get<{ groupId: string }>(url, { headers });
+                request = this.http.get<any>(url, {
+                    headers,
+                });
                 break;
 
             default:
@@ -111,13 +133,11 @@ export class GroupDialogComponent {
         }
         request.subscribe({
             next: (data) => {
-                this.dialogRef.close({
-                    status: "group-created",
-                    groupId: data,
-                });
+                this.dialogRef.close(data);
                 this.router.navigate([
-                    this.data.finalRoute ?? "group/:" + data.groupId,
+                    this.data.finalRoute ?? "group/:", //+ data.groupId,
                 ]);
+                console.log(data);
             },
             error: (error) => {
                 console.error(
@@ -126,4 +146,5 @@ export class GroupDialogComponent {
             },
         });
     }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 }

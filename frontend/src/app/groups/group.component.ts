@@ -18,7 +18,7 @@ import { CommonModule } from "@angular/common";
     styleUrls: ["./group.component.scss"],
 })
 export class GroupComponent {
-    members: { userId: string }[] = [];
+    members: string[] = [];
     groupId!: string;
     membersLoaded = false;
 
@@ -26,7 +26,7 @@ export class GroupComponent {
         this.groupId = this.route.snapshot.paramMap.get("groupId")!;
     }
 
-    activateMembersLoaded(members: { userId: string }[]) {
+    activateMembersLoaded(members: string[]) {
         this.members = members;
         this.membersLoaded = true;
     }

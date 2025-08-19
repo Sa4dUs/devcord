@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { FormsModule } from "@angular/forms";
 
 @Component({
     selector: "group-user-checkbox",
-    imports: [],
+    imports: [FormsModule],
     standalone: true,
     templateUrl: "./group-user-checkbox.component.html",
     styleUrl: "./group-user-checkbox.component.scss",

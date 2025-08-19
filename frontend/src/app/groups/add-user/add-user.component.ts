@@ -15,19 +15,18 @@ import {
     styleUrl: "./add-user.component.scss",
 })
 export class AddUserComponent {
-    @Input() members: { userId: string }[] = [];
+    @Input() members: string[] = [];
     @Input() groupId!: string;
     dialog = inject(MatDialog);
-
-    usersAsString: string[] = this.members.map((member) => member.userId);
 
     openAddUserDialog() {
         const dialogInfo: GroupDialogInterface = {
             groupId: this.groupId,
             title: "Select user to add to the group",
-            route: "add-users",
-            users: this.usersAsString,
+            route: this.groupId + "/add-users",
+            users: this.members,
             httpOperation: HttpOperation.PUT,
+            jsonField: "user_ids",
         };
         const dialogConfig = new MatDialogConfig();
         dialogConfig.width = "500px";

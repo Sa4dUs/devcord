@@ -23,11 +23,11 @@ const context = "member-list";
 })
 export class MemberListComponent {
     @Input() groupId!: string;
-    @Output() eventMembersLoaded = new EventEmitter<{ userId: string }[]>();
+    @Output() eventMembersLoaded = new EventEmitter<string[]>();
 
     loading = false;
     error: string | null = null;
-    members: { userId: string }[] = [];
+    members: string[] = [];
 
     constructor(
         private http: HttpClient,
@@ -63,7 +63,7 @@ export class MemberListComponent {
         const params = new HttpParams().set("from", "0").set("to", "20");
 
         this.http
-            .get<{ userId: string }[]>(
+            .get<string[]>(
                 SERVER_ROUTE + "/api/group/" + this.groupId + "/members",
                 {
                     headers: { Authorization: `Bearer ${token}` },
@@ -73,9 +73,9 @@ export class MemberListComponent {
             .subscribe({
                 next: (data) => {
                     this.members = data;
+                    console.log(this.members);
                     this.loading = false;
                     this.cdRef.detectChanges();
-                    console.log(this.members);
                     this.eventMembersLoaded.emit(this.members);
                 },
                 error: (error) => {
