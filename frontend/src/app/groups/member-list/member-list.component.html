@@ -1,0 +1,8 @@
+<div *ngIf="isLoading()">Loading Members...</div>
+
+
+<ng-container *ngIf="!isLoading() && !getError()">
+<li *ngFor="let member of members">
+      {{ member}}
+</li>
+</ng-container>
