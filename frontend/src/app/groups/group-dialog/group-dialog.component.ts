@@ -21,7 +21,7 @@ import { MatButtonModule } from "@angular/material/button";
 
 //This is a generic dialog for the group operations. Yes, OOP entered in the frontend team
 
-//TODO:For a better usage it will be needed userId -> username that it's not done in backend
+//TODO: @AlexGarciaPrada For a better usage it will be needed userId -> username that it's not done in backend
 
 export enum HttpOperation {
     GET,
@@ -65,10 +65,11 @@ export class GroupDialogComponent {
         @Inject(PLATFORM_ID) private platformId: object,
         private errorsMap: ErrorsHandling,
     ) {}
+
+    //I don't think any is wrong here
     /* eslint-disable @typescript-eslint/no-explicit-any */
     onSubmitGroupDialog() {
         this.selection = [...this.groupUserList.selections];
-        console.log(this.selection);
 
         if (!isPlatformBrowser(this.platformId)) {
             return;
@@ -96,16 +97,15 @@ export class GroupDialogComponent {
                 payload[key] = this.selection;
             }
         }
-        console.log(payload);
 
         if (Object.keys(payload).length === 0) {
             console.error("No data to send, skipping request.");
             return;
         }
-        console.log(payload);
 
         let request: Observable<any>;
 
+        //Coffee for everyone
         switch (this.data.httpOperation) {
             case HttpOperation.POST:
                 request = this.http.post<any>(url, payload, { headers });
@@ -135,9 +135,10 @@ export class GroupDialogComponent {
             next: (data) => {
                 this.dialogRef.close(data);
                 this.router.navigate([
-                    this.data.finalRoute ?? "group/:", //+ data.groupId,
+                    this.data.finalRoute ?? "group/" + this.data.groupId,
                 ]);
-                console.log(data);
+                //For reloading the page
+                window.location.reload();
             },
             error: (error) => {
                 console.error(

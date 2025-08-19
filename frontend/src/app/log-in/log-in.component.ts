@@ -50,7 +50,6 @@ export class LogInComponent {
             })
             .subscribe({
                 next: (data) => {
-                    console.log(data);
                     if (data.username) {
                         localStorage.setItem(
                             "user",

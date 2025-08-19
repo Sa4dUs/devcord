@@ -73,7 +73,6 @@ export class MemberListComponent {
             .subscribe({
                 next: (data) => {
                     this.members = data;
-                    console.log(this.members);
                     this.loading = false;
                     this.cdRef.detectChanges();
                     this.eventMembersLoaded.emit(this.members);

@@ -52,7 +52,6 @@ export class FriendshipSentComponent {
             })
             .subscribe({
                 next: (data) => {
-                    console.log(data);
                     this.requests.set(
                         data.map((d) => ({
                             to_user_username: d.to_user_username,

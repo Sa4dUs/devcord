@@ -24,20 +24,16 @@ export class GroupUserListComponent {
                 this.clearSelections(userId);
             }
             this.selections.add(userId);
-            console.log("Seleccionado:", userId, this.selections);
         } else {
             this.selections.delete(userId);
-            console.log("Deseleccionado:", userId, this.selections);
         }
     }
     clearSelections(userId: string): void {
-        console.log(userId);
         this.selections.clear();
         this.checkboxes.forEach((checkbox) => {
             if (checkbox.name !== userId) {
                 checkbox.checked = false;
             }
         });
-        console.log("Todos los checkboxes desmarcados");
     }
 }

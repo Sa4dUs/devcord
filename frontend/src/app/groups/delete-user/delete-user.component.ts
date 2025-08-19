@@ -28,7 +28,6 @@ export class DeleteUserComponent {
             jsonField: "user_id",
             uniqueAnswer: true,
         };
-        console.log(this.members);
         const dialogConfig = new MatDialogConfig();
         dialogConfig.width = "500px";
         dialogConfig.data = dialogInfo;

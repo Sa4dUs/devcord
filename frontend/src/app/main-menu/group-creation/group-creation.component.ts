@@ -71,7 +71,6 @@ export class GroupCreationComponent {
             );
 
             this.usernames = data.map((friend) => friend.username);
-            console.log("Usernames loaded:", this.usernames);
         } catch (error) {
             console.error("Error loading friends:", error);
             this.usernames = [];
@@ -109,7 +108,6 @@ export class GroupCreationComponent {
 
             dialogRef.afterClosed().subscribe((result) => {
                 if (result?.status === "group-created") {
-                    console.log("Group created with ID:", result.groupId);
                     this.groupCreated.emit(result.groupId);
                 }
             });
