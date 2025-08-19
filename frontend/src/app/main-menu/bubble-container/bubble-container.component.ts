@@ -14,13 +14,19 @@ import {
 } from "./bubble-container-logic/bubble-container-logic.component";
 import { BubbleContainerBackground } from "./bubble-container-background/bubble-container-background.component";
 import { WIDTH, HEIGHT, BUBBLESIZE } from "../main-menuConstants";
+import { GroupLoader } from "./group-loader/group-loader.component";
 
 @Component({
-    selector: "bubbleContainer",
+    selector: "bubble-container",
     templateUrl: "bubble-container.component.html",
     styleUrls: ["bubble-container.component.scss"],
     standalone: true,
-    imports: [CommonModule, BubbleComponent, BubbleContainerBackground],
+    imports: [
+        CommonModule,
+        BubbleComponent,
+        BubbleContainerBackground,
+        GroupLoader,
+    ],
 })
 export class BubbleContainer implements AfterViewInit {
     boundarySelector = ".example-boundary";
@@ -42,17 +48,21 @@ export class BubbleContainer implements AfterViewInit {
         flipV: false,
     };
 
-    bubblesData: BubbleData[] = [
-        { id: 1, isColliding: false, isDragging: false, x: 0, y: 0 },
-    ];
+    bubblesData: BubbleData[] = [];
 
-    bubbleRects: DOMRect[] = [];
     logic = new BubbleContainerLogic();
 
     constructor(private host: ElementRef) {}
 
     ngAfterViewInit() {
         this.setCssVariables();
+
+        const el = this.host.nativeElement.querySelector(this.boundarySelector);
+        if (el) {
+            this.boundaryRect = el.getBoundingClientRect();
+        } else {
+            this.boundaryRect = new DOMRect(0, 0, this.width, this.height);
+        }
     }
 
     setCssVariables() {
@@ -75,8 +85,6 @@ export class BubbleContainer implements AfterViewInit {
         const clampedPos = this.logic.clampPosition(pos.x, pos.y);
         this.bubblesData[index].x = clampedPos.x;
         this.bubblesData[index].y = clampedPos.y;
-
-        this.updateBubbleRect(index);
         this.checkCollisions();
     }
 
@@ -85,18 +93,17 @@ export class BubbleContainer implements AfterViewInit {
         this.checkCollisions();
     }
 
-    updateBubbleRect(index: number) {
-        const b = this.bubblesData[index];
-        this.bubbleRects[index] = this.logic.generateRect(b.x, b.y);
-    }
-
     checkCollisions() {
         this.logic.checkCollisions(this.bubblesData);
-        this.bubbleRects = this.logic.updateRects(this.bubblesData);
     }
 
-    addBubble() {
-        const newId = this.bubblesData.length + 1;
+    onGroupsLoaded(groups: { groupId: string }[]) {
+        groups.forEach((group) => {
+            this.addBubble(group.groupId);
+        });
+    }
+
+    addBubble(groupId: string) {
         const maxAttempts = 100;
 
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -107,26 +114,26 @@ export class BubbleContainer implements AfterViewInit {
                 Math.random() *
                 ((this.boundaryRect?.height || this.height) - BUBBLESIZE);
 
-            const fakeRect = this.logic.generateRect(x, y);
-            const collision = this.bubbleRects.some((r) =>
-                this.logic.isColliding(r, fakeRect),
+            const newBubble: BubbleData = {
+                id: groupId,
+                isColliding: false,
+                isDragging: false,
+                x,
+                y,
+            };
+
+            const collision = this.bubblesData.some((existing) =>
+                this.logic.isColliding(existing, newBubble),
             );
 
             if (!collision) {
-                this.bubblesData.push({
-                    id: newId,
-                    isColliding: false,
-                    isDragging: false,
-                    x,
-                    y,
-                });
-                this.bubbleRects.push(fakeRect);
+                this.bubblesData.push(newBubble);
                 break;
             }
         }
     }
 
-    trackById(index: number, item: { id: number }) {
+    trackById(index: number, item: { id: string }) {
         return item.id;
     }
 }

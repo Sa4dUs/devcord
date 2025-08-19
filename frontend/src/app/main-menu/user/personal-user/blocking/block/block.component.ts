@@ -29,7 +29,6 @@ export class BlockComponent {
 
     blockUser(): void {
         if (!isPlatformBrowser(this.platformId)) {
-            console.log("Can't continue, browser wasn't found");
             return;
         }
 

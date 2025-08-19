@@ -61,7 +61,7 @@ export class FriendshipFriendComponent {
                     this.loading.set(false);
                 },
                 error: (err) => {
-                    // Para pensar, TODO adaptarlo al mapErrors
+                    // Para pensar, TODO: @AlexGarciaPrada adaptarlo al mapErrors
                     console.error("Error with the friend requests:", err);
                     this.error.set(
                         `Error loading friends requests: ${err.message || err.status}`,

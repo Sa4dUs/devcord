@@ -8,7 +8,7 @@ import { SERVER_ROUTE } from "../../../../../../environment/environment.secret";
 // Maybe unblock and block could have a superclass so there is not so much code repetitive
 //After a secound reading im more convince of the previous
 
-//TODO: make an error when the user was already unblocked (different that when it doesn't exist)
+//TODO: @AlexGarciaPrada make an error when the user was already unblocked (different that when it doesn't exist)
 
 const context = "unblock";
 
@@ -33,7 +33,6 @@ export class UnblockComponent {
 
     unblockUser(): void {
         if (!isPlatformBrowser(this.platformId)) {
-            console.log("Can't continue, browser wasn't found");
             return;
         }
 

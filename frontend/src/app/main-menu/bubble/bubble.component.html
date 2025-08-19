@@ -3,8 +3,7 @@
   cdkDrag
   [cdkDragBoundary]="boundarySelector"
   [class.colliding]="isColliding"
-  [class.dragging]="isDragging"
-  (click)="onClick()"
+  (click)="onClick($event)"
   (cdkDragStarted)="onDragStarted($event)"
   (cdkDragEnded)="onDragEnded($event)"
   (cdkDragMoved)="onDragMoved($event)"
