@@ -20,14 +20,14 @@ export class GroupUserListComponent {
     checkboxes!: QueryList<GroupUserCheckboxComponent>;
 
     onUserCheckboxChanged(checked: boolean, userId: string): void {
-        if (checked) {
-            if (this.uniqueAnswer) {
-                this.clearSelections(userId);
-            }
-            this.selections.add(userId);
-        } else {
+        if (!checked) {
             this.selections.delete(userId);
+            return;
         }
+        if (this.uniqueAnswer) {
+            this.clearSelections(userId);
+        }
+        this.selections.add(userId);
     }
     clearSelections(userId: string): void {
         this.selections.clear();

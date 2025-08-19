@@ -4,7 +4,7 @@ import { CommonModule, isPlatformBrowser } from "@angular/common";
 import {
     GroupDialogComponent,
     GroupDialogInterface,
-    HttpOperation,
+    HttpMethod,
 } from "../group-dialog/group-dialog.component";
 import { firstValueFrom, forkJoin } from "rxjs";
 import { HttpClient, HttpParams } from "@angular/common/http";
@@ -47,7 +47,7 @@ export class AddUserComponent {
             title: "Select user to add to the group",
             route: this.groupId + "/add-users",
             users: this.notMemberFriends,
-            httpOperation: HttpOperation.PUT,
+            httpOperation: HttpMethod.PUT,
             jsonField: "user_ids",
         };
         const dialogConfig = new MatDialogConfig();

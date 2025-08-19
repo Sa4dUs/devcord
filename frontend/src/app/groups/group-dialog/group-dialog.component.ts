@@ -23,7 +23,7 @@ import { MatButtonModule } from "@angular/material/button";
 
 //TODO: @AlexGarciaPrada For a better usage it will be needed userId -> username that it's not done in backend
 
-export enum HttpOperation {
+export enum HttpMethod {
     GET,
     POST,
     PUT,
@@ -35,12 +35,12 @@ export interface GroupDialogInterface {
     title: string;
     route: string;
     users: string[];
-    httpOperation: HttpOperation;
+    httpOperation: HttpMethod;
+    jsonField: string;
     finalRoute?: string; //In case it doesn't have it is the groupId
     uniqueAnswer?: boolean; // In default is not unique answer, puto Marcelo, pq se borran usuarios de uno en uno
     context?: string;
     styleUrl?: string;
-    jsonField?: string;
 }
 @Component({
     selector: "group-dialog.component",
@@ -66,8 +66,6 @@ export class GroupDialogComponent {
         private errorsMap: ErrorsHandling,
     ) {}
 
-    //I don't think any is wrong here
-    /* eslint-disable @typescript-eslint/no-explicit-any */
     onSubmitGroupDialog() {
         this.selection = [...this.groupUserList.selections];
 
@@ -86,50 +84,46 @@ export class GroupDialogComponent {
             Authorization: `Bearer ${token}`,
         };
 
-        let payload: any = {};
+        let payload: { [key: string]: string | string[] };
 
-        if (this.data.jsonField && this.selection.length > 0) {
-            const key = this.data.jsonField;
-
-            if (this.data.uniqueAnswer) {
-                payload[key] = this.selection[0];
-            } else {
-                payload[key] = this.selection;
-            }
+        if (this.uniqueAnswer) {
+            payload = { [this.data.jsonField]: this.selection[0] };
+        } else {
+            payload = { [this.data.jsonField]: this.selection };
         }
 
-        if (Object.keys(payload).length === 0) {
-            //If the request is empty there is not need to communicate with the server
-            console.error("No data to send, skipping request");
-            return;
-        }
+        console.log(payload);
 
-        let request: Observable<any>;
+        let request: Observable<typeof payload>;
 
         //Coffee for everyone
         switch (this.data.httpOperation) {
-            case HttpOperation.POST:
-                request = this.http.post<any>(url, payload, { headers });
-                break;
-
-            case HttpOperation.PUT:
-                request = this.http.put<any>(url, payload, { headers });
-                break;
-
-            case HttpOperation.DELETE:
-                request = this.http.delete<any>(url, {
+            case HttpMethod.POST:
+                request = this.http.post<typeof payload>(url, payload, {
                     headers,
                 });
                 break;
 
-            case HttpOperation.GET:
-                request = this.http.get<any>(url, {
+            case HttpMethod.PUT:
+                request = this.http.put<typeof payload>(url, payload, {
+                    headers,
+                });
+                break;
+
+            case HttpMethod.DELETE:
+                request = this.http.delete<typeof payload>(url, {
+                    headers,
+                });
+                break;
+
+            case HttpMethod.GET:
+                request = this.http.get<typeof payload>(url, {
                     headers,
                 });
                 break;
 
             default:
-                console.error("HTTP Operation not supported");
+                console.error("HTTP Method not supported");
                 return;
         }
         request.subscribe({
@@ -148,5 +142,4 @@ export class GroupDialogComponent {
             },
         });
     }
-    /* eslint-enable @typescript-eslint/no-explicit-any */
 }

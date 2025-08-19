@@ -14,7 +14,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import {
     GroupDialogComponent,
     GroupDialogInterface,
-    HttpOperation,
+    HttpMethod,
 } from "../../groups/group-dialog/group-dialog.component";
 //TODO : @AlexGarciaPrada As in add-user this should be done in a more generic way
 @Component({
@@ -91,10 +91,10 @@ export class GroupCreationComponent {
                 title: "Select members for the new group",
                 route: "create",
                 users: this.userIds,
-                httpOperation: HttpOperation.POST,
-                jsonField: "member_ids",
+                httpOperation: HttpMethod.POST,
                 finalRoute: "/main-menu",
                 context: "group-creation",
+                jsonField: "member_ids",
             };
 
             const dialogConfig = new MatDialogConfig();

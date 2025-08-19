@@ -3,7 +3,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import {
     GroupDialogComponent,
     GroupDialogInterface,
-    HttpOperation,
+    HttpMethod,
 } from "../group-dialog/group-dialog.component";
 
 @Component({
@@ -24,9 +24,9 @@ export class DeleteUserComponent {
             title: "Select user to remove from the group",
             route: this.groupId + "/remove-user",
             users: this.members,
-            httpOperation: HttpOperation.POST,
-            jsonField: "user_id",
+            httpOperation: HttpMethod.POST,
             uniqueAnswer: true,
+            jsonField: "user_id",
         };
         const dialogConfig = new MatDialogConfig();
         dialogConfig.width = "500px";
