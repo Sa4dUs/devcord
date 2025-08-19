@@ -1,6 +1,6 @@
 import { HEIGHT, WIDTH, BUBBLESIZE } from "../../main-menuConstants";
 
-///TODO: @AlexGarciaPrada IMPROVE THE COLLISIONS
+///TODO: @AlexGarciaPrada The corners are still problematic
 
 export interface BubbleData {
     id: string;

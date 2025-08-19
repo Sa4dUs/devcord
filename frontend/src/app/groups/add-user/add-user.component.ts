@@ -37,6 +37,7 @@ export class AddUserComponent {
         } catch (err) {
             console.error("Error opening dialog:", err);
         }
+        //Another way is to convert it into a set, not much better
         this.notMemberFriends = this.friendsIds.filter(
             (id) => !this.members.includes(id),
         );

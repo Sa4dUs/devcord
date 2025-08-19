@@ -99,7 +99,8 @@ export class GroupDialogComponent {
         }
 
         if (Object.keys(payload).length === 0) {
-            console.error("No data to send, skipping request.");
+            //If the request is empty there is not need to communicate with the server
+            console.error("No data to send, skipping request");
             return;
         }
 

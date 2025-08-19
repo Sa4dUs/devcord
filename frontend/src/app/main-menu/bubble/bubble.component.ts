@@ -93,6 +93,7 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
             this.emitPosition();
         }
     }
+    //I think event will be useful eventually
     // eslint-disable-next-line
     onDragEnded(event: CdkDragEnd) {
         this.removeDragAnimation();

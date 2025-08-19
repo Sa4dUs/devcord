@@ -16,6 +16,7 @@ export class GroupUserListComponent {
     selections = new Set<string>();
     loading = false;
     @ViewChildren(GroupUserCheckboxComponent)
+    //A reference to the checkboxes, at the time it's only used for reset
     checkboxes!: QueryList<GroupUserCheckboxComponent>;
 
     onUserCheckboxChanged(checked: boolean, userId: string): void {

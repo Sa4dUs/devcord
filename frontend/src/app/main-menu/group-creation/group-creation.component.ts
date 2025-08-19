@@ -16,7 +16,7 @@ import {
     GroupDialogInterface,
     HttpOperation,
 } from "../../groups/group-dialog/group-dialog.component";
-
+//TODO : @AlexGarciaPrada As in add-user this should be done in a more generic way
 @Component({
     selector: "group-creation",
     standalone: true,

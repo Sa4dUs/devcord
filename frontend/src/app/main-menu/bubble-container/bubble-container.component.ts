@@ -57,19 +57,27 @@ export class BubbleContainer implements AfterViewInit {
     ngAfterViewInit() {
         this.setCssVariables();
 
-        const el = this.host.nativeElement.querySelector(this.boundarySelector);
-        if (el) {
-            this.boundaryRect = el.getBoundingClientRect();
-        } else {
+        //This avoid a strange error about how angular renders
+        if (typeof window !== "undefined" && "DOMRect" in window) {
             this.boundaryRect = new DOMRect(0, 0, this.width, this.height);
+        } else {
+            this.boundaryRect = {
+                x: 0,
+                y: 0,
+                width: this.width,
+                height: this.height,
+            } as DOMRect;
         }
     }
 
     setCssVariables() {
-        const el = this.host.nativeElement.querySelector(this.boundarySelector);
-        if (el) {
-            el.style.setProperty("--width", this.width + "px");
-            el.style.setProperty("--height", this.height + "px");
+        const el = this.host.nativeElement.querySelector(
+            this.boundarySelector,
+        ) as HTMLElement | null;
+
+        if (el instanceof HTMLElement) {
+            el.style.setProperty("--width", `${this.width}px`);
+            el.style.setProperty("--height", `${this.height}px`);
         }
     }
 
