@@ -1,0 +1,12 @@
+
+<h1>{{this.data.title}}</h1>
+
+
+<group-user-list [users]="this.data.users" [uniqueAnswer]="this.uniqueAnswer"></group-user-list>
+
+<div mat-dialog-actions>
+  <button mat-button [mat-dialog-close]="false">Cancel</button>
+ <button mat-button (click)="onSubmitGroupDialog()" cdkFocusInitial>
+  Done
+</button>
+</div>

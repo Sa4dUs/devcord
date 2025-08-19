@@ -1,0 +1,12 @@
+
+
+<ng-container *ngIf="users.length > 0">
+  <div *ngFor="let user of users; let i = index">
+
+    <group-user-checkbox 
+      [name]="user" 
+      [id]="i+1" 
+      (changed)="onUserCheckboxChanged($event, user)">
+    </group-user-checkbox>
+  </div>
+</ng-container>

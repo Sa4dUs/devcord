@@ -1,11 +1,11 @@
 import { Component, ViewChild } from "@angular/core";
 import { BubbleContainer } from "./bubble-container/bubble-container.component";
 import { UserComponent } from "./user/user.component";
-//import { GroupCreationComponent } from "./group-creation/group-creation.component";
+import { GroupCreationComponent } from "./group-creation/group-creation.component";
 @Component({
     selector: "main-menu",
     standalone: true,
-    imports: [BubbleContainer, UserComponent], //GroupCreationComponent],
+    imports: [BubbleContainer, UserComponent, GroupCreationComponent],
     templateUrl: "./main-menu.component.html",
 })
 export class MainMenuComponent {
