@@ -13,7 +13,6 @@
     "block":{
         "404": "This user doesn't exists",
         "409": "This user was already blocked"
-
     },
     "unblock":{
         "404": "This user doesn't exists"
@@ -24,6 +23,37 @@
     "update":{
         "400": "This username has already been taken or it's not valid",
         "401": "You're not authorized, revise your token"
+    },
+    "group-creation":{
+        "400": "No members sent",
+        "401": "JWT missing or invalid"
+    },
+
+    "add-user":{
+        "401": "JWT missing or invalid",
+        "403": "You're not the group owner",
+        "404": "Group doesn't exist"
+    },
+
+    "remove-user":{
+        "401": "JWT missing or invalid",
+        "403": "You're not the group owner",
+        "404": "Group doesn't exist"
+    },
+
+    "delete-group":{
+        "401": "JWT missing or invalid",
+        "403": "You're not the group owner",
+        "404": "Group doesn't exist"
+    },
+
+    "user-groups":{
+        "401": "JWT missing or invalid"
+    },
+
+    "member-list":{
+         "401": "JWT missing or invalid",
+         "404": "Group doesn't exist"
     },
 
     "default":{

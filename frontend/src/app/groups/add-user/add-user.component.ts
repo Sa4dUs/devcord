@@ -49,6 +49,7 @@ export class AddUserComponent {
             users: this.notMemberFriends,
             httpOperation: HttpMethod.PUT,
             jsonField: "user_ids",
+            context: "add-user",
         };
         const dialogConfig = new MatDialogConfig();
         dialogConfig.width = "500px";
