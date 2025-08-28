@@ -53,8 +53,8 @@ export class RegisterComponent {
                         JSON.stringify({
                             username,
                             email,
-                            password,
                             telephone,
+                            user_id: data.user_id,
                         }),
                     );
 

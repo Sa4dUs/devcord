@@ -44,6 +44,7 @@ export class LogInComponent {
                 username: string;
                 email: string;
                 telephone?: string;
+                user_id: string;
             }>(SERVER_ROUTE + "/api/auth/login", {
                 username,
                 password,
@@ -58,6 +59,7 @@ export class LogInComponent {
                                 username: data.username,
                                 email: data.email,
                                 telephone: data.telephone || null,
+                                user_id: data.user_id,
                             }),
                         );
                     }
