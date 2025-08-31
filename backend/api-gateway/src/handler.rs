@@ -11,11 +11,13 @@ use axum::{
     response::Response,
 };
 use futures_util::{SinkExt, StreamExt};
-use hyper::header::CONTENT_LENGTH;
+use hyper::header::{CONTENT_LENGTH, SEC_WEBSOCKET_PROTOCOL};
 
 use dashmap::DashMap;
+use hyper::HeaderMap;
 use reqwest::Client;
 use tokio_tungstenite::connect_async;
+use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 
 use crate::circuit_breaker::CircuitBreaker;
 use crate::config::{Instance, Service};
@@ -98,6 +100,7 @@ pub(crate) async fn ws_handler(
     Extension(ParsedURI { prefix: _, subpath }): Extension<ParsedURI>,
     Extension(_): Extension<Service>,
     Extension(Instance(uri)): Extension<Instance>,
+    headers: HeaderMap,
     ws: WebSocketUpgrade,
 ) -> Result<Response<Body>, StatusCode> {
     let uri_str = format!("ws://{uri}{subpath}");
@@ -105,13 +108,33 @@ pub(crate) async fn ws_handler(
         .parse()
         .map_err(|_| StatusCode::BAD_GATEWAY.with_debug("Invalid uri. Could not parse"))?;
 
-    Ok(ws.on_upgrade(move |ws| proxy_websockets(ws, uri)))
+    // FIXME(Sa4dUs): we shouldn't accept all the protocols given by the client, but we'll fix this once someone complains
+    let client_protocols = headers
+        .get(SEC_WEBSOCKET_PROTOCOL)
+        .and_then(|hv| hv.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    let accepted: Vec<String> = client_protocols
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect();
+
+    tracing::debug!("{:?}", accepted);
+    Ok(ws
+        .protocols(accepted.clone())
+        .on_upgrade(move |ws| proxy_websockets(ws, uri, client_protocols.to_string())))
 }
 
-async fn proxy_websockets(mut client_socket: WebSocket, uri: Uri) {
-    let url = uri.to_string();
+async fn proxy_websockets(mut client_socket: WebSocket, uri: Uri, client_protocols: String) {
+    let mut req = uri.clone().into_client_request().unwrap();
 
-    match connect_async(&url).await {
+    if !client_protocols.is_empty() {
+        req.headers_mut()
+            .insert("Sec-WebSocket-Protocol", client_protocols.parse().unwrap());
+    }
+
+    match connect_async(req).await {
         Ok((target_socket, _)) => {
             let (mut client_tx, mut client_rx) = client_socket.split();
             let (mut target_tx, mut target_rx) = target_socket.split();
@@ -143,7 +166,7 @@ async fn proxy_websockets(mut client_socket: WebSocket, uri: Uri) {
                 _ = target_to_client => (),
             }
 
-            tracing::info!("WebSocket proxy connection closed: {}", url);
+            tracing::info!("WebSocket proxy connection closed: {}", uri);
         }
         Err(e) => {
             tracing::error!("Failed to connect to upstream WebSocket: {}", e);
