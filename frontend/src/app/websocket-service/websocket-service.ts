@@ -130,4 +130,11 @@ export class WebSocketService<T> {
             if (this.onError) this.onError(err);
         };
     }
+    public send(msg: T) {
+        if (this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify(msg));
+        } else {
+            console.warn("WebSocket not ready, message queued:", msg);
+        }
+    }
 }
