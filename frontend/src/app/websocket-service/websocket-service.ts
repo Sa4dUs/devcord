@@ -36,6 +36,12 @@ export class WebSocketService<T> {
     private socket!: WebSocket;
     private extension: string;
 
+    private keepAliveInterval: ReturnType<typeof setInterval> | null = null;
+    private keepAliveTime = 30000;
+
+    private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    private reconnectAttempts = 0;
+
     private onOpen?: OpenCallback;
     private onClose?: CloseCallback;
     private onMessage?: MessageCallback<T>;
@@ -50,6 +56,32 @@ export class WebSocketService<T> {
         this.onError = callbacks?.onError;
 
         this.connectWebSocket();
+    }
+
+    private startKeepAlive() {
+        this.keepAliveInterval = setInterval(() => {
+            if (this.socket.readyState === WebSocket.OPEN)
+                this.socket.send(JSON.stringify({ type: "ping" }));
+        }, this.keepAliveTime);
+    }
+
+    private stopKeepAlive() {
+        if (this.keepAliveInterval) clearInterval(this.keepAliveInterval);
+    }
+
+    private reconnectWithBackoff() {
+        if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+
+        const delay = Math.min(
+            1000 * Math.pow(2, this.reconnectAttempts),
+            30000,
+        );
+        console.log("Reconnecting in " + delay + "ms");
+
+        this.reconnectTimeout = setTimeout(() => {
+            this.reconnectAttempts++;
+            this.connectWebSocket();
+        }, delay);
     }
 
     public connect(): Observable<T> {
@@ -67,6 +99,8 @@ export class WebSocketService<T> {
         this.socket.onopen = () => {
             //This is just for debugging
             console.log("WS opened: " + this.extension);
+            this.startKeepAlive();
+
             if (this.onOpen) this.onOpen();
         };
 
@@ -83,13 +117,16 @@ export class WebSocketService<T> {
 
         this.socket.onclose = (event) => {
             console.log("WS closed: " + this.extension, event);
+            this.stopKeepAlive();
+
             if (this.onClose) this.onClose(event);
-            //Just until we discover how to keep it alive
-            this.connectWebSocket();
+            this.reconnectWithBackoff();
         };
 
         this.socket.onerror = (err) => {
             console.error("WS error: " + this.extension, err);
+            this.stopKeepAlive();
+
             if (this.onError) this.onError(err);
         };
     }
