@@ -37,6 +37,10 @@ export default [
                 document: "readonly",
                 global: "readonly",
                 localStorage: "readonly",
+                setInterval: "readonly",
+                clearInterval: "readonly",
+                setTimeout: "readonly",
+                clearTimeout: "readonly",
             },
         },
         plugins: {
