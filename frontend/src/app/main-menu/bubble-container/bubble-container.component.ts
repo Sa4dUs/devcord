@@ -56,10 +56,7 @@ export class BubbleContainer implements AfterViewInit {
 
     constructor(private host: ElementRef, private dialog: MatDialog) {}
     openChat(groupId: string) {
-        this.dialog.open(MessageComponent, {
-        data: { channelId: groupId },
-        width: '500px',
-        });
+  
     }
     ngAfterViewInit() {
         this.setCssVariables();

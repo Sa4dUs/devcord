@@ -6,6 +6,8 @@ import { AddUserComponent } from "./add-user/add-user.component";
 import { CommonModule } from "@angular/common";
 import { CallButtonComponent } from "./call-button/call-button.component";
 
+import { MessageListenerService } from "../main-menu/message/message.component";
+
 @Component({
     selector: "group",
     standalone: true,
@@ -24,8 +26,9 @@ export class GroupComponent {
     groupId!: string;
     membersLoaded = false;
 
-    constructor(private route: ActivatedRoute) {
+    constructor(private route: ActivatedRoute, private messageService: MessageListenerService ) {
         this.groupId = this.route.snapshot.paramMap.get("groupId")!;
+
     }
 
     activateMembersLoaded(members: string[]) {
