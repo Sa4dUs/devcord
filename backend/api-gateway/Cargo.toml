@@ -23,6 +23,7 @@ tokio-tungstenite = "0.27.0"
 futures-util = "0.3.31"
 dashmap = "6.1.0"
 axum-extra = { version = "0.10.1", features = ["typed-header"] }
+regex = "1.11.1"
 
 [lib]
 name = "api_gateway"

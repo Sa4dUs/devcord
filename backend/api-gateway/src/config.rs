@@ -77,3 +77,42 @@ pub fn load_from_path(path: &str) -> Result<Config, Error> {
     let config: Config = toml::from_str(&content)?;
     Ok(config)
 }
+
+impl Config {
+    pub(crate) fn get_route(&self, svc: &str, route: &str) -> Option<crate::config::Route> {
+        // FIXME(Sa4dUs): Collapse if-let statements when using rust 2024 edition
+        if let Some(svc) = self.services.get(svc) {
+            if let Some(route) = svc.get_route(route) {
+                return Some(route);
+            }
+        }
+        None
+    }
+}
+
+impl Service {
+    pub(crate) fn get_route(&self, route: &str) -> Option<crate::config::Route> {
+        self.routes
+            .iter()
+            .find(|r| r.path == route)
+            .or_else(|| {
+                self.routes.iter().find(|r| {
+                    let regex = path_pattern_to_regex(&r.path);
+                    regex.is_match(route)
+                })
+            })
+            .cloned()
+    }
+}
+
+// FIXME(Sa4dUs): Move this to a utils module
+fn path_pattern_to_regex(path: &str) -> regex::Regex {
+    let pattern = path
+        .replace("-", r"\-")
+        .replace(".", r"\.")
+        .replace("{", "(?P<")
+        .replace("}", ">[^/]+)");
+
+    let full_pattern = format!("^{pattern}$");
+    regex::Regex::new(&full_pattern).expect("Invalid route regex")
+}

@@ -69,6 +69,7 @@ pub async fn app() -> anyhow::Result<Router> {
         "USER_RESQUEST_TOPIC",
         "friendship_requested",
     )));
+
     let channels_c = channels.clone();
     let addr_c = addr.clone();
     handles.push(tokio::spawn(fluvio_reader::run::<
@@ -79,6 +80,27 @@ pub async fn app() -> anyhow::Result<Router> {
         "USER_ANSWER_TOPIC",
         "friendship_answered",
     )));
+    let channels_c = channels.clone();
+    let addr_c = addr.clone();
+    handles.push(tokio::spawn(
+        fluvio_reader::run::<topic_structs::MessageSent>(
+            channels_c,
+            addr_c,
+            "MESSAGE_EVENTS_TOPIC",
+            "message_sent",
+        ),
+    ));
+
+    let channels_c = channels.clone();
+    let addr_c = addr.clone();
+    handles.push(tokio::spawn(
+        fluvio_reader::run::<topic_structs::GroupEvent>(
+            channels_c,
+            addr_c,
+            "GROUP_EVENTS_TOPIC",
+            "group",
+        ),
+    ));
 
     let router: Router = Router::new()
         .route("/", get(notification_handler))

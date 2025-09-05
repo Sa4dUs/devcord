@@ -80,11 +80,11 @@ where
             continue;
         };
 
-        let Ok(key) = from_slice::<String>(record_key) else {
+        let Ok(key) = std::str::from_utf8(record_key) else {
             continue;
         };
 
-        let Some(sender) = senders.get(&key) else {
+        let Some(sender) = senders.get(key) else {
             continue;
         };
 

@@ -8,19 +8,20 @@ use tokio::sync::mpsc::{self};
 
 use crate::{
     app::{AppState, ResponseReceiver},
-    jwt::Claims,
+    jwt::{Authenticated, Claims},
 };
 
 pub async fn notification_handler(
     ws: WebSocketUpgrade,
     State(state): State<Arc<AppState>>,
-    claims: Claims,
+    Authenticated { claims, jwt }: Authenticated,
 ) -> impl IntoResponse {
     let (sender, receiver) = mpsc::channel(10);
 
     state.channels.insert(claims.user_id.clone(), sender);
 
-    ws.on_upgrade(move |socket| handle_notifications(socket, receiver, state, claims))
+    ws.protocols([jwt])
+        .on_upgrade(move |socket| handle_notifications(socket, receiver, state, claims))
 }
 
 pub async fn handle_notifications(

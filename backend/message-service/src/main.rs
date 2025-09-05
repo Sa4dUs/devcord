@@ -1,11 +1,16 @@
-use axum::{Router, routing::get};
+use message_service::{app, config, state::AppState};
 
 #[tokio::main]
-async fn main() {
-    // build our application with a single route
-    let app = Router::new().route("/", get(|| async { "Hello, World!" }));
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
 
-    // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let db = config::init_db().await?;
+    let state = AppState::new(db).await?;
+
+    let app = app::build(state);
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
 }
