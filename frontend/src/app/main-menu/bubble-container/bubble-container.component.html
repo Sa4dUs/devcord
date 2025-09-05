@@ -1,4 +1,3 @@
-
 <div
   class="example-boundary"
   [ngStyle]="{
@@ -8,9 +7,9 @@
     'background-repeat': 'no-repeat'
   }"
 >
-<group-loader
-  (groupsLoaded)="onGroupsLoaded($event)">
-</group-loader>
+  <group-loader
+    (groupsLoaded)="onGroupsLoaded($event)">
+  </group-loader>
 
 <bubble
   *ngFor="let bubble of bubblesData; let i = index; trackBy: trackById"
@@ -21,9 +20,12 @@
   [y]="bubble.y"
   (dragStateChanged)="onBubbleDragStateChanged(i, $event)"
   (positionChanged)="onBubbleMoved(i, $event)"
-></bubble>
-</div>
+  (openChat)="openChat($event)" 
+>
+</bubble>
 
+
+</div>
 
 <bubble-container-background
   #bgManager

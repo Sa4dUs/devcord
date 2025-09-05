@@ -7,6 +7,7 @@ import {
     ViewChild,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { MessageComponent } from '../message/message.component';
 import { BubbleComponent } from "../bubble/bubble.component";
 import {
     BubbleContainerLogic,
@@ -15,6 +16,7 @@ import {
 import { BubbleContainerBackground } from "./bubble-container-background/bubble-container-background.component";
 import { WIDTH, HEIGHT, BUBBLESIZE } from "../main-menuConstants";
 import { GroupLoader } from "./group-loader/group-loader.component";
+import { MatDialog } from "@angular/material/dialog";
 
 @Component({
     selector: "bubble-container",
@@ -52,8 +54,13 @@ export class BubbleContainer implements AfterViewInit {
 
     logic = new BubbleContainerLogic();
 
-    constructor(private host: ElementRef) {}
-
+    constructor(private host: ElementRef, private dialog: MatDialog) {}
+    openChat(groupId: string) {
+        this.dialog.open(MessageComponent, {
+        data: { channelId: groupId },
+        width: '500px',
+        });
+    }
     ngAfterViewInit() {
         this.setCssVariables();
 
@@ -144,4 +151,5 @@ export class BubbleContainer implements AfterViewInit {
     trackById(index: number, item: { id: string }) {
         return item.id;
     }
+    
 }
