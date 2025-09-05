@@ -455,12 +455,17 @@ fn setup_on_ice_candidate(pc: Arc<RTCPeerConnection>, sender: mpsc::Sender<WSInn
             return Box::pin(async {});
         };
 
-        let candidate_str = serde_json::to_string(&candidate).unwrap(); //TODO Why error?
-        let msg = Message::text(candidate_str);
-
+        let candidate_str = serde_json::json!({
+            "type": "candidate",
+            "candidate": candidate.to_json().unwrap()
+        })
+        .to_string();
         let sender = sender.clone();
         Box::pin(async move {
-            sender.send(WSInnerUserMessage::Message(msg)).await.unwrap() //TODO! Probs ignore, if channel is closed this does not trigger
+            sender
+                .send(WSInnerUserMessage::Message(candidate_str.into()))
+                .await
+                .unwrap() //TODO! Probs ignore, if channel is closed this does not trigger
         })
     }));
 }
@@ -565,13 +570,9 @@ async fn get_peer_conn() -> Result<RTCPeerConnection> {
     let mut registry = Registry::new();
     registry = register_default_interceptors(registry, &mut media_engine)?;
 
-    let mut setting_engine = SettingEngine::default();
-    setting_engine.set_network_types(vec![NetworkType::Udp4]);
-
     let api = APIBuilder::new()
         .with_media_engine(media_engine)
         .with_interceptor_registry(registry)
-        .with_setting_engine(setting_engine)
         .build();
 
     let config = RTCConfiguration {

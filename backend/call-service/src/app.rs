@@ -1,4 +1,6 @@
-use std::{collections::HashMap, env::var, sync::Arc, time::Duration};
+use serde_json::from_slice;
+use smol::stream::StreamExt;
+use std::{env::var, sync::Arc, time::Duration};
 
 use anyhow::{Result, anyhow};
 use axum::{
@@ -7,16 +9,24 @@ use axum::{
     routing::get,
 };
 use dashmap::DashMap;
-use sqlx::{PgPool, postgres::PgPoolOptions, prelude::FromRow};
+use fluvio::{
+    FluvioConfig, Offset, consumer::ConsumerConfigExtBuilder, metadata::topic::TopicSpec,
+};
+use sqlx::{PgPool, postgres::PgPoolOptions};
 use tokio::{
     net::TcpListener,
     sync::{Mutex, mpsc},
 };
+use topic_structs::GroupEvent;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing::{debug, info};
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::{room::Room, user_ws::handle_upgrade};
+use crate::{
+    room::Room,
+    sql_utils::calls::{add_user_to_group, create_group, delete_group, remove_user_from_group},
+    user_ws::handle_upgrade,
+};
 
 pub type RoomID = String;
 #[derive(Debug, Clone)]
@@ -33,7 +43,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    async fn new(db: PgPool) -> AppState {
+    async fn new(db: PgPool) -> anyhow::Result<AppState> {
         let rooms: Arc<DashMap<String, Arc<Mutex<Room>>>> = Default::default();
         let (tx, mut rx) = mpsc::channel(10);
 
@@ -51,11 +61,73 @@ impl AppState {
             });
         }
 
-        AppState {
+        {
+            let db = db.clone();
+            let mut fluvio_config =
+                FluvioConfig::new(var("FLUVIO_ADDR").expect("FLUVIO_ADDR env not set").trim());
+            fluvio_config.use_spu_local_address = true;
+
+            let fluvio = fluvio::Fluvio::connect_with_config(&fluvio_config).await?;
+
+            let group_event_topic = var("GROUP_EVENT_TOPIC")
+                .unwrap_or("group-events".to_owned())
+                .trim()
+                .to_string();
+
+            let admin = fluvio.admin().await;
+
+            let topics = admin
+                .all::<TopicSpec>()
+                .await
+                .expect("Failed to list topics");
+            let topic_names = topics
+                .iter()
+                .map(|topic| topic.name.clone())
+                .collect::<Vec<String>>();
+
+            if !topic_names.contains(&group_event_topic) {
+                let topic_spec = TopicSpec::new_computed(1, 1, None);
+                admin
+                    .create(group_event_topic.clone(), false, topic_spec)
+                    .await?;
+            }
+
+            let consumer_config = ConsumerConfigExtBuilder::default()
+                .topic(group_event_topic)
+                .offset_start(Offset::beginning())
+                .build()
+                .expect("Failed to build consumer config");
+
+            let mut consumer_stream = fluvio.consumer_with_config(consumer_config).await?;
+
+            //TODO! (lamoara) clean up and change this to be able to close it without disconecting fluvio
+            tokio::spawn(async move {
+                while let Some(Ok(record)) = consumer_stream.next().await {
+                    let Ok(event) = from_slice::<GroupEvent>(record.value()) else {
+                        return; //TODO! This shouldnt break :D
+                    };
+
+                    match event {
+                        GroupEvent::GroupCreatedEvent(event) => create_group(&db, event).await,
+                        GroupEvent::GroupDeletedEvent(event) => delete_group(&db, event).await,
+                        GroupEvent::GroupUserAddedEvent(event) => {
+                            add_user_to_group(&db, event).await
+                        }
+                        GroupEvent::GroupUserRemovedEvent(event) => {
+                            remove_user_from_group(&db, event).await
+                        }
+                    }
+                }
+
+                debug!("Fluvio reader stopped");
+            });
+        }
+
+        Ok(AppState {
             rooms,
             pool: db,
             sender: tx,
-        }
+        })
     }
 
     pub async fn get_room(&self, room_id: &str) -> Result<Arc<Mutex<Room>>> {
@@ -185,7 +257,7 @@ pub async fn app() -> anyhow::Result<(Router, mpsc::Sender<AppStateMessage>)> {
 
     init(&db).await;
 
-    let app_state = Arc::new(AppState::new(db).await);
+    let app_state = Arc::new(AppState::new(db).await?);
     let sender = app_state.sender.clone();
     let app = Router::new()
         .route("/health", get(|| async { "Viva el imperio Mongol!" }))

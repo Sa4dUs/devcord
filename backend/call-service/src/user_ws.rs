@@ -48,7 +48,7 @@ async fn handle_ws(ws: WebSocket, state: Arc<AppState>, claims: Claims) {
     //     return; //Handle error
     // };
 
-    debug!("Room returned");
+    debug!("Room returned: {:?}", room);
 
     let mut room_lock = room.lock().await;
 
