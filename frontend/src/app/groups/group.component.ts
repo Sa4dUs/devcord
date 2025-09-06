@@ -4,6 +4,7 @@ import { MemberListComponent } from "./member-list/member-list.component";
 import { DeleteUserComponent } from "./remove-user/remove-user.component";
 import { AddUserComponent } from "./add-user/add-user.component";
 import { CommonModule } from "@angular/common";
+import { CallButtonComponent } from "./call-button/call-button.component";
 
 @Component({
     selector: "group",
@@ -13,6 +14,7 @@ import { CommonModule } from "@angular/common";
         DeleteUserComponent,
         AddUserComponent,
         CommonModule,
+        CallButtonComponent,
     ],
     templateUrl: "./group.component.html",
     styleUrls: ["./group.component.scss"],

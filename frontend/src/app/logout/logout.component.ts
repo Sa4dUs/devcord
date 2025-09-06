@@ -55,7 +55,7 @@ export class LogoutComponent {
                     this.loading = false;
                     this.closeDialog();
                     // TODO(Sa4dUs): We should probably decide what's the default route for unauthenticated users and put it below
-                    this.router.navigate(["/login"]);
+                    this.router.navigate([""]);
                 },
                 error: (error) => {
                     this.errorMessage = this.errorsMap.getErrorMessage(

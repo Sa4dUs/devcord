@@ -6,4 +6,5 @@
 <ng-container *ngIf="membersLoaded">
   <remove-user [members]="members" [groupId]="groupId"></remove-user>
   <add-user [members]="members" [groupId]="groupId"></add-user>
+  <call-button [groupId] ="groupId"></call-button>
 </ng-container>
