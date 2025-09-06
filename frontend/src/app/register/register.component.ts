@@ -63,7 +63,7 @@ export class RegisterComponent {
                     }
 
                     console.log("Register succesfully:", data);
-                    this.router.navigate(["/user"]);
+                    this.router.navigate(["/main-menu"]);
                 },
                 error: (error) => {
                     console.error(

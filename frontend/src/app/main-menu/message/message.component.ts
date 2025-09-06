@@ -15,11 +15,11 @@ export class MessageComponent {
 
   constructor(
     private route: ActivatedRoute,
-    private messageListener: MessageListenerService // <--- inyectamos
+    private messageListener: MessageListenerService 
   ) {}
 
   ngOnInit() {
-    const groupId = "abc123"; // o el id real del grupo
-    this.messageListener.init(groupId); // ahora funciona
+    const groupId = "abc123"; // 
+    this.messageListener.init(groupId); 
   }
 }
