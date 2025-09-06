@@ -6,7 +6,7 @@ use topic_structs::{
 pub async fn create_group(pool: &PgPool, event: GroupCreatedEvent) {
     sqlx::query(
         "
-        INSERT INTO rooms (id) VALUES $1
+        INSERT INTO rooms (id) VALUES ($1)
         ",
     )
     .bind(&event.group_id)
@@ -58,7 +58,7 @@ pub async fn delete_group(pool: &PgPool, event: GroupDeletedEvent) {
 pub async fn add_user_to_group(pool: &PgPool, event: GroupUserAddedEvent) {
     sqlx::query(
         "
-        INSERT INTO users (id) VALUES $1
+        INSERT INTO users (id) VALUES ($1)
         ",
     )
     .bind(&event.user_id)
@@ -68,7 +68,7 @@ pub async fn add_user_to_group(pool: &PgPool, event: GroupUserAddedEvent) {
 
     sqlx::query(
         "
-        INSERT INTO in_room (room_id, user_id) VALUES $1, $2
+        INSERT INTO in_room (room_id, user_id) VALUES ($1, $2)
         ",
     )
     .bind(event.group_id)
