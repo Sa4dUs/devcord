@@ -12,7 +12,7 @@ pub async fn create_group(pool: &PgPool, event: GroupCreatedEvent) {
     .bind(&event.group_id)
     .execute(pool)
     .await
-    .unwrap();
+    .ok();
 
     //TODO! (lamoara) Change this to proper bulk insert
     for user_id in event.member_ids {
@@ -42,7 +42,7 @@ pub async fn delete_group(pool: &PgPool, event: GroupDeletedEvent) {
     .bind(&event.group_id)
     .execute(pool)
     .await
-    .unwrap();
+    .ok();
 
     sqlx::query(
         "
@@ -52,7 +52,7 @@ pub async fn delete_group(pool: &PgPool, event: GroupDeletedEvent) {
     .bind(event.group_id)
     .execute(pool)
     .await
-    .unwrap();
+    .ok();
 }
 
 pub async fn add_user_to_group(pool: &PgPool, event: GroupUserAddedEvent) {
@@ -75,7 +75,7 @@ pub async fn add_user_to_group(pool: &PgPool, event: GroupUserAddedEvent) {
     .bind(event.user_id)
     .execute(pool)
     .await
-    .unwrap();
+    .ok();
 }
 
 pub async fn remove_user_from_group(pool: &PgPool, event: GroupUserRemovedEvent) {
@@ -88,5 +88,5 @@ pub async fn remove_user_from_group(pool: &PgPool, event: GroupUserRemovedEvent)
     .bind(event.user_id)
     .execute(pool)
     .await
-    .unwrap();
+    .ok();
 }
