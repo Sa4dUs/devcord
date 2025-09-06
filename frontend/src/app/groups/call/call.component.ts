@@ -1,8 +1,9 @@
 import { Component, ElementRef, ViewChild } from "@angular/core";
 import { WebSocketService } from "../../websocket-service/websocket-service";
+import { ActivatedRoute } from "@angular/router";
 
 //Fill it with the actual extension
-const extension = "ws://192.168.1.145:3002";
+const extension = "/ws/call";
 
 export enum WebSocketMessageType {
     ConnectToRoom = "connecttoroom",
@@ -28,7 +29,7 @@ type MessageFormat =
     | { type: WebSocketMessageType.Candidate; candidate: RTCIceCandidateInit };
 
 @Component({
-    selector: "call.component",
+    selector: "call",
     imports: [],
     templateUrl: "./call.component.html",
     styleUrl: "./call.component.scss",
@@ -39,6 +40,8 @@ export class CallComponent {
     @ViewChild("remoteMediaContainer", { static: true })
     remoteMediaContainerRef!: ElementRef<HTMLDivElement>;
 
+    private groupId = "";
+
     private websocketService: WebSocketService<MessageFormat>;
 
     //This is a way I found to do it (the function were too large (eso dijo ella))
@@ -47,39 +50,44 @@ export class CallComponent {
         onMessage: this.handleMessage.bind(this),
     };
 
+    //For getting the id, neccesary for making the room
+    ngOnInit() {
+        this.route.params.subscribe((params) => {
+            this.groupId = params["groupId"];
+            console.log("GroupId:", this.groupId);
+        });
+    }
     private localStream!: MediaStream;
     private peerConnection!: RTCPeerConnection;
     private remoteStreams = new Map<string, MediaStream>();
+
+    public cameraOn = true;
+    public micOn = true;
 
     private configuration: RTCConfiguration = {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     };
 
-    constructor() {
+    constructor(private route: ActivatedRoute) {
         this.websocketService = new WebSocketService(extension, this.callbacks);
     }
 
     async handleOpen() {
-        this.websocketService.send({
-            type: WebSocketMessageType.ConnectToRoom,
-            room_id: "A",
-        });
-        // eslint-disable-next-line no-undef
+        //TODO: @AlexGarciaPrada See this, navigator not defined
+        // eslint-disable-next-line
         this.localStream = await navigator.mediaDevices.getUserMedia({
-            video: false,
+            video: true,
             audio: true,
         });
-
         this.localVideoRef.nativeElement.srcObject = this.localStream;
-
-        console.log("Total tracks: ", this.localStream.getTracks().length);
 
         this.peerConnection = new RTCPeerConnection(this.configuration);
 
-        this.localStream.getTracks().forEach((track, index) => {
-            console.log(`Track #${index}: kind=${track.kind}, id=${track.id}`);
-            this.peerConnection.addTrack(track, this.localStream);
-        });
+        this.localStream
+            .getTracks()
+            .forEach((track) =>
+                this.peerConnection.addTrack(track, this.localStream),
+            );
 
         let counter = 0;
         this.peerConnection.ontrack = (event) => {
@@ -87,12 +95,10 @@ export class CallComponent {
                 counter += 1;
                 return;
             }
-
             const [stream] = event.streams;
             const userId = stream.id;
 
             if (!this.remoteStreams.has(userId)) {
-                console.log("Nuevo usuario remoto:", userId);
                 this.remoteStreams.set(userId, stream);
 
                 const container = document.createElement("div");
@@ -103,7 +109,6 @@ export class CallComponent {
                 video.autoplay = true;
                 video.playsInline = true;
                 video.srcObject = stream;
-                video.load();
 
                 video.onloadedmetadata = () => {
                     video
@@ -119,8 +124,6 @@ export class CallComponent {
                 this.remoteMediaContainerRef.nativeElement.appendChild(
                     container,
                 );
-            } else {
-                console.log("Stream adicional para usuario existente:", userId);
             }
         };
 
@@ -135,14 +138,12 @@ export class CallComponent {
 
         this.websocketService.send({
             type: WebSocketMessageType.ConnectToRoom,
-            room_id: "A",
+            room_id: this.groupId,
         });
     }
 
     async handleMessage(data: MessageFormat) {
-        console.log("WS raw message:", data);
-
-        if (data.type === WebSocketMessageType.Offer) {
+        if (data.type === "offer") {
             await this.peerConnection.setRemoteDescription(
                 new RTCSessionDescription(data),
             );
@@ -150,28 +151,40 @@ export class CallComponent {
             await this.peerConnection.setLocalDescription(answer);
             this.websocketService.send({
                 type: WebSocketMessageType.RTCAnswer,
-                answer: answer,
+                answer,
             });
-        } else if (data.type === WebSocketMessageType.Answer) {
-            //Maybe is neccesary to handle
-        } else if (data.type === WebSocketMessageType.Candidate) {
+        } else if (data.type === "candidate") {
+            console.log(data);
             await this.peerConnection.addIceCandidate(
                 new RTCIceCandidate(data.candidate),
             );
         }
     }
 
-    handleClose() {
-        if (this.peerConnection) this.peerConnection.close();
-        if (this.localStream)
-            this.localStream.getTracks().forEach((track) => track.stop());
-        this.localVideoRef.nativeElement.srcObject = null;
-
-        for (const [id] of this.remoteStreams) {
-            const el = document.getElementById(`remote-user-${id}`);
-            if (el) el.remove();
+    //TODO: @AlexGarciaPrada This only stop sending but still captures
+    toggleCamera() {
+        if (!this.localStream) return;
+        this.cameraOn = !this.cameraOn;
+        this.localStream.getVideoTracks().forEach((track) => {
+            track.enabled = this.cameraOn;
+        });
+        if (this.cameraOn) {
+            console.log("Camera On");
+        } else {
+            console.log("Camera Off");
         }
+    }
 
-        this.remoteStreams.clear();
+    toggleMic() {
+        if (!this.localStream) return;
+        this.micOn = !this.micOn;
+        this.localStream.getAudioTracks().forEach((track) => {
+            track.enabled = this.micOn;
+        });
+        if (this.micOn) {
+            console.log("Voice On");
+        } else {
+            console.log("Voice Off");
+        }
     }
 }
