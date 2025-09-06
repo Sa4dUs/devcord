@@ -46,15 +46,17 @@ export class WebSocketService<T> {
     private onClose?: CloseCallback;
     private onMessage?: MessageCallback<T>;
     private onError?: ErrorCallback;
+    private isMessage?: boolean;
+    private channelId?: string; //lo llamo así por Memoria Histórica 
 
     constructor(extension: string, callbacks?: WebSocketCallbacks<T>) {
         this.extension = extension;
-
         this.onOpen = callbacks?.onOpen;
         this.onClose = callbacks?.onClose;
         this.onMessage = callbacks?.onMessage;
         this.onError = callbacks?.onError;
-
+        this.isMessage=this.isMessage??false; //la doble interrogación es por sintaxis (pregunta Pato por adelantado)
+        this.channelId=this.channelId;
         this.connectWebSocket();
     }
 
@@ -83,7 +85,15 @@ export class WebSocketService<T> {
             this.connectWebSocket();
         }, delay);
     }
-
+    public setisMessage(value: boolean) {
+        if (value===undefined){
+            this.isMessage=false;
+        }
+        this.isMessage = value;
+    }
+    public setchannelId(value: string | undefined) {
+        this.channelId = value;
+    }
     public connect(): Observable<T> {
         this.connectWebSocket();
         return this.messageSubject.asObservable();
@@ -94,7 +104,11 @@ export class WebSocketService<T> {
         if (!token) return;
 
         const wsUrl = SERVER_ROUTE + this.extension;
-        this.socket = new WebSocket(wsUrl, [token]);
+        if (this.isMessage && this.channelId) { //el pato no quería esto, pero son lentejas. Si en un futuro aumenta la casuística le meto un case
+            this.socket = new WebSocket(wsUrl, [token, this.channelId]);
+        } else {
+            this.socket = new WebSocket(wsUrl, [token]);
+        }
 
         this.socket.onopen = () => {
             //This is just for debugging

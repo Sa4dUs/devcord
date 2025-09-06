@@ -6,7 +6,7 @@ import { AddUserComponent } from "./add-user/add-user.component";
 import { CommonModule } from "@angular/common";
 import { CallButtonComponent } from "./call-button/call-button.component";
 
-import { MessageListenerService } from "../main-menu/message/message.component";
+import { MessageListenerService } from "../main-menu/message-listener/message-listener.service";
 
 @Component({
     selector: "group",

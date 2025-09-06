@@ -7,7 +7,6 @@ import {
     ViewChild,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { MessageComponent } from '../message/message.component';
 import { BubbleComponent } from "../bubble/bubble.component";
 import {
     BubbleContainerLogic,
@@ -17,6 +16,7 @@ import { BubbleContainerBackground } from "./bubble-container-background/bubble-
 import { WIDTH, HEIGHT, BUBBLESIZE } from "../main-menuConstants";
 import { GroupLoader } from "./group-loader/group-loader.component";
 import { MatDialog } from "@angular/material/dialog";
+import { Router } from '@angular/router';
 
 @Component({
     selector: "bubble-container",
@@ -54,10 +54,13 @@ export class BubbleContainer implements AfterViewInit {
 
     logic = new BubbleContainerLogic();
 
-    constructor(private host: ElementRef, private dialog: MatDialog) {}
+    constructor(private host: ElementRef, private dialog: MatDialog, private router: Router) {}
     openChat(groupId: string) {
   
     }
+    onOpenChat(bubbleId: string) {
+  this.router.navigate(['/messages', bubbleId]);
+}
     ngAfterViewInit() {
         this.setCssVariables();
 

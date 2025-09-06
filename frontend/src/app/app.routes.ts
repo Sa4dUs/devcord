@@ -13,6 +13,8 @@ import { UnblockComponent } from "./main-menu/user/personal-user/blocking/unbloc
 import { UpdateUsernameComponent } from "./main-menu/user/personal-user/update/update.component";
 import { GroupComponent } from "./groups/group.component";
 import { CallComponent } from "./groups/call/call.component";
+import { MessageComponent } from "./main-menu/message/message.component";
+
 
 export const routes: Routes = [
     { path: "register", component: RegisterComponent },
@@ -28,8 +30,9 @@ export const routes: Routes = [
     { path: "update", component: UpdateUsernameComponent },
     { path: "main-menu", component: MainMenuComponent },
     { path: "group/:groupId", component: GroupComponent },
-    //At the time there is only one call in each group
+
     { path: "group/:groupId/call", component: CallComponent },
+    { path: "messages/:id", component: MessageComponent },
 
     { path: "", redirectTo: "home", pathMatch: "full" },
 ];

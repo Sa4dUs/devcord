@@ -1,27 +1,25 @@
-import { Component, Injectable } from "@angular/core";
+import { Component } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { FormsModule } from "@angular/forms";
-import { WebSocketService } from "../../websocket-service/websocket-service";
-import { MessageFormat } from "../../notification-listener/notification-listener.component";
-const extension="/ws/message";
+import { ActivatedRoute } from "@angular/router";
+import { MessageListenerService } from "../message-listener/message-listener.service"; 
 
-export interface MessageComponent {
-    header: string;
-    info: Record<string, string>;
-  }
-@Injectable({
-  providedIn: "root",
+@Component({
+  selector: "app-message",
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: "./message.component.html",
+  styleUrls: ["./message.component.scss"],
 })
+export class MessageComponent {
+  groupId = "";
 
+  constructor(
+    private route: ActivatedRoute,
+    private messageListener: MessageListenerService // <--- inyectamos
+  ) {}
 
-
-export class MessageListenerService{
-  private websocketService: WebSocketService<MessageFormat>;
-
-private callbacks={
-  
-} 
-constructor (){
-  this.websocketService=new WebSocketService(extension, this.callbacks);
-}
+  ngOnInit() {
+    const groupId = "abc123"; // o el id real del grupo
+    this.messageListener.init(groupId); // ahora funciona
+  }
 }

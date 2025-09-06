@@ -37,7 +37,7 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
     @Output() openChat = new EventEmitter<string>();
 
 onOpenChat(event: MouseEvent) {
-  event.stopPropagation(); // Para que no active el click de navegar al grupo
+  event.stopPropagation(); 
   this.openChat.emit(this.id);
 }
 
