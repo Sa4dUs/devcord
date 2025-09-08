@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "update:hosts": "node allowed-hosts/allowed-host-update.js",
-    "start": "npm run update:hosts && ng serve --host 0.0.0.0",
+    "update:hosts": "node allowed-host-update.js",
+    "start": "npm run update:hosts && ng serve --host 0.0.0.0 --configuration production",
     "dev": "npm run update:hosts && ng serve --host 0.0.0.0 --poll 2000",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
@@ -52,6 +52,7 @@
     "@types/jasmine": "~5.1.0",
     "@types/matter-js": "^0.19.8",
     "@types/node": "^20.17.19",
+    "dotenv": "^17.2.2",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.1",
