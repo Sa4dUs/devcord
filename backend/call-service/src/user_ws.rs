@@ -72,7 +72,7 @@ async fn handle_ws(ws: WebSocket, state: Arc<AppState>, claims: Claims) {
     let Ok((room_tx, mut room_rx)) = room_lock
         .new_user(&claims.user_id)
         .await
-        .map_err(|e| debug!("User tried to access room while not allowed to: {}", e))
+        .map_err(|e| debug!("Error when user tried to join the room: {}", e))
     else {
         ws_tx.close(); //FIXME! Give feedback
         return;

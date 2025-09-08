@@ -6,7 +6,7 @@ use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::sync::{broadcast, mpsc};
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 use webrtc::{
     api::{
         APIBuilder, interceptor_registry::register_default_interceptors, media_engine::MediaEngine,
@@ -59,9 +59,7 @@ pub enum WSInnerUserMessage {
 #[derive(Debug, Clone)]
 pub enum TrackPacket {
     UserPacket(Arc<UserPacket>),
-    //Opened(Arc<PacketIdentifier>),
     Closed(Arc<PacketIdentifier>),
-    //UserLeft(Arc<UserID>),
 }
 
 #[derive(Debug)]
@@ -97,7 +95,6 @@ pub struct UserPacket {
 #[derive(Debug)]
 pub struct UserInfo {
     user_channel_sender: mpsc::Sender<WSInnerUserMessage>,
-    //user_channel_receiver: mpsc::Receiver<WSFromUserMessage>,
     connection: Arc<RTCPeerConnection>,
     other_tracks: TrackMap,
     user_tracks: Arc<DashMap<String, Arc<TrackRemote>>>,
@@ -106,12 +103,10 @@ pub struct UserInfo {
 impl UserInfo {
     pub fn new(
         user_channel_sender: mpsc::Sender<WSInnerUserMessage>,
-        //user_channel_receiver: mpsc::Receiver<WSFromUserMessage>,
         connection: Arc<RTCPeerConnection>,
     ) -> Self {
         UserInfo {
             user_channel_sender,
-            //user_channel_receiver,
             connection,
             other_tracks: Default::default(),
             user_tracks: Default::default(),
@@ -180,7 +175,7 @@ impl Room {
 
         let (inner_tx, ws_rx) = mpsc::channel(10);
         let (ws_tx, inner_rx) = mpsc::channel(10);
-        let pc = get_peer_conn().await.unwrap(); //TODO! do something with this, but if it fails, F
+        let pc = get_peer_conn().await?;
         let pc = Arc::new(pc);
         let user_id = Arc::new(user_id.to_string());
         setup_peer_conn(
@@ -201,7 +196,7 @@ impl Room {
         );
 
         let info = self.add_existing_tracks_to_user(info).await;
-        self.active_users.insert(user_id, info); //TODO! Shouldnt need to check if already exists but should just in case (Reminder)
+        self.active_users.insert(user_id, info); //We know it doesnt exist (We check at the start of the fn)
         Ok((ws_tx, ws_rx))
     }
 
@@ -209,7 +204,13 @@ impl Room {
         for value in self.active_users.iter() {
             let user_id = value.key();
             for track in value.value().user_tracks.iter() {
-                add_remote_track(track.clone(), &user_id, &user_info).await;
+                if add_remote_track(track.clone(), &user_id, &user_info)
+                    .await
+                    .is_err()
+                {
+                    //If for some reason we cannot add the track i guess we just look away and pray
+                    continue;
+                }
             }
         }
 
@@ -229,7 +230,7 @@ fn create_room_controller_thread(
             debug!("Recieved room info: {info:?}");
             match info {
                 RoomInfo::PCStateChanged { user_id, state } => {
-                    info!("State changed for {} to {}", user_id, state)
+                    debug!("State changed for {} to {}", user_id, state)
                 }
                 RoomInfo::TrackCreated {
                     user_id: original_id,
@@ -239,12 +240,18 @@ fn create_room_controller_thread(
                         let user_info = pair.value();
                         let user_id = pair.key();
 
+                        if add_remote_track(track.clone(), &original_id, user_info)
+                            .await
+                            .is_err()
+                        {
+                            //If for some reason we cannot add the track i guess we just look away and pray
+                            continue;
+                        }
+
                         if *user_id == original_id {
                             user_info.user_tracks.insert(track.id(), track.clone());
                             continue;
                         }
-
-                        add_remote_track(track.clone(), &original_id, user_info).await;
                     }
                 }
                 RoomInfo::TrackRemoved { identifier } => {
@@ -258,9 +265,14 @@ fn create_room_controller_thread(
                                 user.user_channel_sender
                                     .send(WSInnerUserMessage::Close)
                                     .await
-                                    .unwrap(); //TODO! If this breaks it means the user already disconected and its completelly normal, probs should ignore
+                                    .ok(); //If this breaks it means the user already disconected and its completelly normal, probs should ignore
                                 let msg = TrackPacket::Closed(identifier.clone());
-                                broadcast_sender.send(msg).unwrap(); //TODO! If this breaks I would be surprised
+                                if let Err(e) = broadcast_sender.send(msg) {
+                                    //This is controlled by the room, it cant break randomly, and if it breaks we are fucked (A lot)
+                                    //FIXME! Try and clean up more (Close all user connections)
+                                    error!("Room broadcaster closed: {}", e);
+                                    break; //Try to clean up
+                                }
                                 let removed = active_users.remove(value.key());
                                 debug!("Removed active user: {:?}", removed)
                             }
@@ -271,14 +283,19 @@ fn create_room_controller_thread(
                             continue;
                         };
 
-                        let removed = user.connection.remove_track(&track.sender).await.unwrap(); //TODO! This could break if the connection thas weird stuff, cannot let the room thread explode because of that
+                        let removed = user
+                            .connection
+                            .remove_track(&track.sender)
+                            .await
+                            .map_err(|e| error!("Error deleting track from user: {}", e))
+                            .ok(); //FIXME! This could break if the connection thas weird stuff, cannot let the room thread explode because of that, we ignore but maybe should check something else as well
                         debug!("Track removed, other user track removed: {:?}", removed);
                     }
 
                     if active_users.is_empty() {
                         info_receiver.close();
-                        debug!("ROOM CLOSED");
-                        break; //TODO! Do close sequence
+                        debug!("Room closed");
+                        break;
                     }
                 }
                 RoomInfo::UserDisconected { user_id } => {
@@ -287,32 +304,37 @@ fn create_room_controller_thread(
                             continue;
                         };
 
-                        debug!("USER DISCONECTED INFO: {:?}", user_info);
-                        debug!("USER INFO TRACKS: {:?}", user_info.user_tracks);
+                        debug!("User disconected info: {:?}", user_info);
+                        debug!("User info tracks: {:?}", user_info.user_tracks);
 
                         for track in user_info.user_tracks.iter() {
                             let identifier = PacketIdentifier {
                                 sender: user_id.clone(),
                                 track_id: track.id(),
                             };
-                            debug!("BROADCASTING DESCONNECTION FOR: {:?}", identifier);
+                            debug!("Broadcasting disconnection for: {:?}", identifier);
                             let msg = TrackPacket::Closed(Arc::new(identifier.clone()));
-                            broadcast_sender.send(msg).unwrap(); //TODO!
-                            debug!("BROADCASTED DESCONNECTION FOR: {:?}", identifier);
+                            if let Err(e) = broadcast_sender.send(msg) {
+                                //This is controlled by the room, it cant break randomly, and if it breaks we are fucked (A lot)
+                                //FIXME! Try and clean up more (Close all user connections)
+                                error!("Room broadcaster closed: {}", e);
+                                break; //Try to clean up
+                            }
+                            debug!("Broadcasted disconnection for: {:?}", identifier);
                         }
-                        debug!("FINISHED BROADCASTING LOOP");
+                        debug!("Finished broadcasting loop");
 
-                        user_info.connection.close().await.unwrap(); //TODO! ?
-                    }
+                        user_info.connection.close().await.ok(); //If its already closed then no problem
+                    } //This needs to be inside another scope, if not, it deadlocks while trying to remove it from active users
 
                     let removed = active_users.remove(&user_id);
-                    debug!("REMOVED USER BECAUSE OF DISCONNECTION: {:?}", removed);
-                    debug!("{:?} USERS LEFT", active_users.len());
+                    debug!("Removed user bacause of disconnection: {:?}", removed);
+                    debug!("{:?} Users left", active_users.len());
 
                     if active_users.is_empty() {
                         info_receiver.close();
-                        debug!("ROOM CLOSED");
-                        break; //TODO! Do close sequence
+                        debug!("Room closed");
+                        break;
                     }
                 }
             }
@@ -321,12 +343,16 @@ fn create_room_controller_thread(
         controller_sender
             .send(AppStateMessage::RoomClosed(id))
             .await
-            .unwrap(); //TODO!
-        debug!("ROOM SENT TO REMOVE");
+            .unwrap(); //If this triggers the service is completelly fucked, panic is probs the right thing to do
+        debug!("Room sent to remove");
     });
 }
 
-async fn add_remote_track(track: Arc<TrackRemote>, user_id: &UserID, user_info: &UserInfo) {
+async fn add_remote_track(
+    track: Arc<TrackRemote>,
+    user_id: &UserID,
+    user_info: &UserInfo,
+) -> Result<()> {
     let local_track = Arc::new(TrackLocalStaticRTP::new(
         track.codec().capability,
         track.id(),
@@ -337,7 +363,7 @@ async fn add_remote_track(track: Arc<TrackRemote>, user_id: &UserID, user_info: 
         .connection
         .add_track(local_track.clone())
         .await
-        .unwrap(); //TODO! Do something 
+        .inspect_err(|e| error!("Error adding track to sender: {}", e))?;
 
     let identifier = PacketIdentifier {
         sender: user_id.clone(),
@@ -350,6 +376,8 @@ async fn add_remote_track(track: Arc<TrackRemote>, user_id: &UserID, user_info: 
     };
 
     user_info.other_tracks.insert(identifier, info);
+
+    Ok(())
 }
 
 fn create_transmiter_thread(
@@ -368,7 +396,10 @@ fn create_transmiter_thread(
                         continue;
                     }
                     if let Some(track) = tracks.get(&user_packet.identifier) {
-                        track.track.write_rtp(&user_packet.packet).await.unwrap(); //TODO! if err probs close track
+                        if track.track.write_rtp(&user_packet.packet).await.is_err() {
+                            //FIXME! Close the track or at least check if it closes
+                            return; //If we cant write to he track we close it
+                        }
                     }
                 }
                 TrackPacket::Closed(packet_identifier) => {
@@ -391,23 +422,33 @@ fn create_ws_listener_thread(
             match msg {
                 WSFromUserMessage::RTCOffer { offer } => {
                     debug!("WSMSG OFFER");
-                    pc.set_remote_description(offer).await.unwrap(); //TODO! This error is important
+                    pc.set_remote_description(offer)
+                        .await
+                        .inspect_err(|e| debug!("Error while receiving offer: {}", e))
+                        .ok(); //FIXME! Could be changed to proper comunication
                 }
                 WSFromUserMessage::RTCAnswer { answer } => {
                     debug!("WSMSG ANSWER");
-                    pc.set_remote_description(answer).await.unwrap(); //TODO! This error is important
+                    pc.set_remote_description(answer)
+                        .await
+                        .inspect_err(|e| debug!("Error while receiving answer: {}", e))
+                        .ok(); //FIXME! Could be changed to proper comunication
                 }
                 WSFromUserMessage::RTCCandidate { candidate } => {
                     debug!("WSMSG CANDIDATE");
+                    //FIXME! Probs store the candidates till its ready to accept them
                     if pc.current_remote_description().await.is_none() {
                         continue;
                     }
-                    pc.add_ice_candidate(candidate).await.unwrap(); //TODO! This error is important
+                    pc.add_ice_candidate(candidate)
+                        .await
+                        .inspect_err(|e| debug!("Error while receiving candidate: {}", e))
+                        .ok(); //FIXME! Could be changed to proper comunication
                 }
                 WSFromUserMessage::Disconected { user_id } => {
                     debug!("WSMSG DISCONECTED: {:?}", user_id);
                     let msg = RoomInfo::UserDisconected { user_id };
-                    info_sender.send(msg).await.unwrap(); //TODO! Probs just ignore
+                    info_sender.send(msg).await.ok(); //TODO! We dont really care if its closed or broken, cant do anything about it
                 }
                 _ => (),
             }
@@ -442,7 +483,16 @@ fn setup_on_peer_conn_state_change(
 
         let sender = sender.clone();
         Box::pin(async move {
-            sender.send(info).await.unwrap(); //TODO handle this error, probs ignore
+            sender
+                .send(info)
+                .await
+                .inspect_err(|e| {
+                    error!(
+                        "Error talking to room controlelr with connection still open: {}",
+                        e
+                    )
+                })
+                .ok(); //We cannot do anything if it breaks
         })
     }));
 }
@@ -452,10 +502,16 @@ fn setup_on_ice_candidate(pc: Arc<RTCPeerConnection>, sender: mpsc::Sender<WSInn
         let Some(candidate) = candidate else {
             return Box::pin(async {});
         };
+        let Ok(candidate_json) = candidate
+            .to_json()
+            .inspect_err(|e| debug!("Error parsing candidate to json: {}", e))
+        else {
+            return Box::pin(async {});
+        }; //Why would this even break?
 
         let candidate_str = serde_json::json!({
             "type": "candidate",
-            "candidate": candidate.to_json().unwrap()
+            "candidate": candidate_json
         })
         .to_string();
         let sender = sender.clone();
@@ -463,7 +519,7 @@ fn setup_on_ice_candidate(pc: Arc<RTCPeerConnection>, sender: mpsc::Sender<WSInn
             sender
                 .send(WSInnerUserMessage::Message(candidate_str.into()))
                 .await
-                .unwrap() //TODO! Probs ignore, if channel is closed this does not trigger
+                .ok(); //Probs ignore, if channel is closed this does not trigger, and cannot do anything about it (I think)
         })
     }));
 }
@@ -489,25 +545,39 @@ fn setup_on_track(
         let broadcast_sender = broadcast_sender.clone();
         let info_sender = info_sender.clone();
 
+        //FIXME! Move this into a fn
         tokio::spawn(async move {
-            info_sender.send(info).await.unwrap(); //TODO!
+            if info_sender
+                .send(info)
+                .await
+                .inspect_err(|e| error!("Error trying to notify the room: {}", e))
+                .is_err()
+            {
+                return;
+            }
 
             debug!("On track started reading");
             while let Ok(Ok((packet, _))) =
                 tokio::time::timeout(Duration::from_secs(5), track.read_rtp()).await
             {
-                //TODO! Change this timeout for an env or something idk
+                //FIXME! Change this timeout for an env or something idk
                 let identifier = identifier.clone();
                 let packet = UserPacket { identifier, packet };
                 let packet = Arc::new(packet);
                 let packet = TrackPacket::UserPacket(packet);
 
-                broadcast_sender.send(packet).unwrap();
+                if broadcast_sender.send(packet).is_err() {
+                    return; //We asume it closed (Shouldnt happen) so we stop doing our thing
+                }
             }
 
             debug!("On track finished reading");
             let msg = RoomInfo::TrackRemoved { identifier };
-            info_sender.send(msg).await.unwrap(); //TODO! An error here is indeed a problem
+            info_sender
+                .send(msg)
+                .await
+                .inspect_err(|e| error!("Error trying to inform room: {}", e))
+                .ok(); //Cannot do anithing about it
         });
         Box::pin(async move {})
     }));
@@ -519,18 +589,31 @@ fn setup_on_negotiation_needed(
 ) {
     let outer_pc = pc.clone();
     outer_pc.on_negotiation_needed(Box::new(move || {
-        // if pc.connection_state() != RTCPeerConnectionState::Connected {
-        //     return Box::pin(async move {});
-        // }
-
         let pc = pc.clone();
         let sender = sender.clone();
         Box::pin(async move {
-            let offer = pc.create_offer(None).await.unwrap(); //Actually do something with this
-            let offer_str = serde_json::to_string(&offer).unwrap(); //Should not fail
-            pc.set_local_description(offer).await.unwrap(); //Actually do something with this
+            let Ok(offer) = pc
+                .create_offer(None)
+                .await
+                .inspect_err(|e| error!("Error creating offer: {}", e))
+            else {
+                return;
+            };
+            let Ok(offer_str) =
+                serde_json::to_string(&offer).inspect_err(|e| error!("Eror parsing offer: {}", e))
+            else {
+                return;
+            }; //Should not fail
+            if pc
+                .set_local_description(offer)
+                .await
+                .inspect_err(|e| error!("Error setting lcoal description: {}", e))
+                .is_err()
+            {
+                return; //FIXME! If possible try to tell the user
+            }
             let msg = WSInnerUserMessage::Message(offer_str.into());
-            sender.send(msg).await.unwrap(); //TODO! This = bad
+            sender.send(msg).await.ok(); //If it breaks, too bad, cant do shit (I think)
         })
     }));
 }
@@ -549,21 +632,38 @@ fn setup_on_signaling_state_change(
         let sender = sender.clone();
 
         Box::pin(async move {
-            let answer = pc.create_answer(None).await.unwrap(); //TODO Importatnt error
-            let answer_str = serde_json::to_string(&answer).unwrap(); //TODO! Idk
-            pc.set_local_description(answer).await.unwrap(); //TODO! Important error, should do something about it
+            let Ok(answer) = pc
+                .create_answer(None)
+                .await
+                .inspect_err(|e| error!("Error creating answer: {}", e))
+            else {
+                return;
+            };
+            let Ok(answer_str) = serde_json::to_string(&answer)
+                .inspect_err(|e| error!("Eror parsing answer: {}", e))
+            else {
+                return;
+            }; //Should not fail
+            if pc
+                .set_local_description(answer)
+                .await
+                .inspect_err(|e| error!("Error setting lcoal description: {}", e))
+                .is_err()
+            {
+                return; //FIXME! If possible try to tell the user
+            }
             sender
                 .send(WSInnerUserMessage::Message(answer_str.into()))
                 .await
-                .unwrap(); //TODO! Gues user disconected?
+                .ok(); //Guess user disconected
         })
     }));
 }
 
 async fn get_peer_conn() -> Result<RTCPeerConnection> {
-    //TODO! Change this so you can configure rooms and save the config maybe
+    //FIXME! Change this so you can configure rooms and save the config maybe, for now it works
     let mut media_engine: MediaEngine = MediaEngine::default();
-    media_engine.register_default_codecs().unwrap(); //TODO! Do something with the error :D
+    media_engine.register_default_codecs()?; //I think this only errs if you already have the codecs in so it should be no problem
 
     let mut registry = Registry::new();
     registry = register_default_interceptors(registry, &mut media_engine)?;
