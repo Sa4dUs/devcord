@@ -24,6 +24,11 @@ export class NotificationListenerService {
     };
 
     constructor() {
-        this.websocketService = new WebSocketService(extension, this.callbacks);
+        const token = localStorage.getItem("token") ?? "";
+        this.websocketService = new WebSocketService(
+            extension,
+            this.callbacks,
+            token,
+        );
     }
 }
