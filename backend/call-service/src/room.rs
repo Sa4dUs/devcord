@@ -134,10 +134,7 @@ impl Room {
         sender: mpsc::Sender<AppStateMessage>,
         id: RoomID,
     ) -> Room {
-        let mut allowed_users_set = HashSet::default();
-        for user in allowed_users {
-            allowed_users_set.insert(user);
-        }
+        let allowed_users_set = HashSet::from_iter(allowed_users);
 
         let (broadcast_sender, _) = broadcast::channel(10);
         let (info_sender, info_receiver) = mpsc::channel(10);
