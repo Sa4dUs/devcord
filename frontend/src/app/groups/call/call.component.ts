@@ -69,7 +69,12 @@ export class CallComponent {
     };
 
     constructor(private route: ActivatedRoute) {
-        this.websocketService = new WebSocketService(extension, this.callbacks);
+        const token = localStorage.getItem("token") ?? "";
+        this.websocketService = new WebSocketService(
+            extension,
+            this.callbacks,
+            token,
+        );
     }
 
     async handleOpen() {
