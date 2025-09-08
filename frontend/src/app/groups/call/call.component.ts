@@ -80,6 +80,7 @@ export class CallComponent {
             audio: true,
         });
         this.localVideoRef.nativeElement.srcObject = this.localStream;
+        this.localVideoRef.nativeElement.muted = true;
 
         this.peerConnection = new RTCPeerConnection(this.configuration);
 
