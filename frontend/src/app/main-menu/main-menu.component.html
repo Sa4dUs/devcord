@@ -1,5 +1,7 @@
 <h1>Main Menu</h1>
 
-<app-user> </app-user>
-<bubble-container>  </bubble-container>
-<group-creation (groupCreated) = "addGroup($event)"></group-creation>
+<app-user></app-user>
+<bubble-container></bubble-container>
+<group-creation (groupCreated)="addGroup($event)"></group-creation>
+<group-loader (groupsLoaded)="onGroupsLoaded($event)"></group-loader>
+<app-message></app-message>

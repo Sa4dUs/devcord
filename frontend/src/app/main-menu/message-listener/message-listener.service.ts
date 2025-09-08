@@ -1,29 +1,83 @@
 import { Injectable } from "@angular/core";
-import { WebSocketService } from "../../websocket-service/websocket-service";
-
-const extension = "ws/message";
+import { Subject, Observable } from "rxjs";
 
 export interface MessageFormat {
   header: string;
   info: Record<string, string>;
 }
+
 @Injectable({ providedIn: 'root' })
 export class MessageListenerService {
-    private websocketService!: WebSocketService<MessageFormat>;
+  private websocket!: WebSocket;
+  private messageSubject = new Subject<MessageFormat>();
+  private openSubject = new Subject<void>();
+  private closeSubject = new Subject<void>();
 
-    private callbacks = {
-        onOpen: () => console.log("Message connected"),
-        onClose: (e: CloseEvent) => console.log(e),
-        onMessage: (data: MessageFormat) => console.log(data),
-        onError: (err: Event | Error) => console.error(err),
+  public onMessage(): Observable<MessageFormat> {
+    return this.messageSubject.asObservable();
+  }
+
+  public onOpen(): Observable<void> {
+    return this.openSubject.asObservable();
+  }
+
+  public onClose(): Observable<void> {
+    return this.closeSubject.asObservable();
+  }
+
+  // Ahora recibe channelId como parámetro
+  init(channelId: string) {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No hay token, login requerido");
+      return;
+    }
+
+    const url = `wss://lamoara.duckdns.org/devcord/ws/message`;
+    console.log("Estoy aquí");
+    console.log("primero token", token, "channelId",channelId);
+    this.websocket = new WebSocket(url, [token, channelId]);
+
+    this.websocket.onopen = () => {
+      console.log("Conectado al WebSocket de mensajes");
+      this.openSubject.next();
     };
 
-    init(groupId: string) {
-        this.websocketService = new WebSocketService<MessageFormat>(extension, this.callbacks);
-        this.websocketService.setisMessage(true);    
-        this.websocketService.setchannelId(groupId); 
-        this.websocketService.connect();
+    this.websocket.onclose = (e) => {
+      console.log("WebSocket cerrado", e);
+      this.closeSubject.next();
+    };
+
+    this.websocket.onerror = (err) => {
+      console.error("Error WebSocket:", err);
+    };
+
+    this.websocket.onmessage = (event) => {
+      try {
+        const msg: MessageFormat = JSON.parse(event.data);
+        this.messageSubject.next(msg);
+        console.log("Mensaje recibido:", msg);
+      } catch (e) {
+        console.error("Error en mensaje WebSocket:", e);
+      }
+    };
+  }
+
+  send(text: string) {
+    if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket no está abierto");
+      return;
     }
+
+    const payload: MessageFormat = {
+      header: "message",
+      info: { text }
+    };
+
+    this.websocket.send(JSON.stringify(payload));
+  }
+
+  close() {
+    this.websocket?.close();
+  }
 }
-
-
