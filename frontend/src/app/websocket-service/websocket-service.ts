@@ -32,22 +32,26 @@ interface WebSocketCallbacks<T> {
 }
 
 export class WebSocketService<T> {
-    private messageSubject = new Subject<T>();
+    private readonly messageSubject = new Subject<T>();
     private socket!: WebSocket;
-    private extension: string;
+    private readonly extension: string;
 
     private keepAliveInterval: ReturnType<typeof setInterval> | null = null;
-    private keepAliveTime = 30000;
+    private readonly keepAliveTime = 30000;
 
     private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     private reconnectAttempts = 0;
 
-    private onOpen?: OpenCallback;
-    private onClose?: CloseCallback;
-    private onMessage?: MessageCallback<T>;
-    private onError?: ErrorCallback;
+    private readonly onOpen?: OpenCallback;
+    private readonly onClose?: CloseCallback;
+    private readonly onMessage?: MessageCallback<T>;
+    private readonly onError?: ErrorCallback;
 
-    constructor(extension: string, callbacks?: WebSocketCallbacks<T>) {
+    constructor(
+        extension: string,
+        callbacks?: WebSocketCallbacks<T>,
+        protocols?: string | string[],
+    ) {
         this.extension = extension;
 
         this.onOpen = callbacks?.onOpen;
@@ -55,7 +59,7 @@ export class WebSocketService<T> {
         this.onMessage = callbacks?.onMessage;
         this.onError = callbacks?.onError;
 
-        this.connectWebSocket();
+        this.connectWebSocket(protocols);
     }
 
     private startKeepAlive() {
@@ -89,12 +93,9 @@ export class WebSocketService<T> {
         return this.messageSubject.asObservable();
     }
 
-    private connectWebSocket() {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
+    private connectWebSocket(protocols?: string | string[]) {
         const wsUrl = SERVER_ROUTE + this.extension;
-        this.socket = new WebSocket(wsUrl, [token]);
+        this.socket = new WebSocket(wsUrl, protocols);
 
         this.socket.onopen = () => {
             //This is just for debugging
