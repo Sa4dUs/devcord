@@ -1,0 +1,4 @@
+{
+  "__comment": "Fill this array with the hostnames that should be allowed in Angular's allowedHosts. Example: [\"localhost\", \"127.0.0.1\", \"my-domain.com\"]",
+  "allowedHosts": ["localhost", "127.0.0.1", "my-domain.com"]
+}
