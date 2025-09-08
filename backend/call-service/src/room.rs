@@ -1,18 +1,16 @@
-use std::{collections::HashSet, fmt, sync::Arc, time::Duration, vec};
+use std::{collections::HashSet, sync::Arc, time::Duration, vec};
 
 use anyhow::Result;
 use axum::extract::ws::Message;
 use dashmap::DashMap;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::sync::{broadcast, mpsc};
 use tracing::{debug, info};
 use webrtc::{
     api::{
         APIBuilder, interceptor_registry::register_default_interceptors, media_engine::MediaEngine,
-        setting_engine::SettingEngine,
     },
-    ice::network_type::NetworkType,
     ice_transport::{ice_candidate::RTCIceCandidateInit, ice_server::RTCIceServer},
     interceptor::registry::Registry,
     peer_connection::{
@@ -31,7 +29,7 @@ use webrtc::{
     },
 };
 
-use crate::app::{AppStateMessage, RoomID};
+use crate::appstate::{AppStateMessage, RoomID};
 
 type UserID = Arc<String>;
 type TrackMap = Arc<DashMap<PacketIdentifier, TrackInfo>>;
@@ -348,7 +346,7 @@ async fn add_remote_track(track: Arc<TrackRemote>, user_id: &UserID, user_info: 
 
     let info = TrackInfo {
         track: local_track,
-        sender: sender,
+        sender,
     };
 
     user_info.other_tracks.insert(identifier, info);
@@ -593,65 +591,4 @@ async fn get_peer_conn() -> Result<RTCPeerConnection> {
         .await?;
 
     Ok(peer_connection)
-}
-
-#[derive(Debug, Deserialize)]
-struct IceServerJson {
-    #[serde(deserialize_with = "string_or_vec")]
-    urls: Vec<String>,
-    username: Option<String>,
-    credential: Option<String>,
-}
-
-impl Into<RTCIceServer> for IceServerJson {
-    fn into(self) -> RTCIceServer {
-        RTCIceServer {
-            urls: self.urls,
-            username: self.username.unwrap_or_default(),
-            credential: self.credential.unwrap_or_default(),
-        }
-    }
-}
-
-// Adaptador: acepta string o array
-fn string_or_vec<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    struct StringOrVec;
-
-    impl<'de> serde::de::Visitor<'de> for StringOrVec {
-        type Value = Vec<String>;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a string or a list of strings")
-        }
-
-        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-            E: serde::de::Error,
-        {
-            Ok(vec![v.to_string()])
-        }
-
-        fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-        where
-            E: serde::de::Error,
-        {
-            Ok(vec![v])
-        }
-
-        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-        where
-            A: serde::de::SeqAccess<'de>,
-        {
-            let mut vec = Vec::new();
-            while let Some(s) = seq.next_element()? {
-                vec.push(s);
-            }
-            Ok(vec)
-        }
-    }
-
-    deserializer.deserialize_any(StringOrVec)
 }

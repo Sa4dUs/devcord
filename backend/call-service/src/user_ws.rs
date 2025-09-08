@@ -9,10 +9,10 @@ use axum::{
     response::IntoResponse,
 };
 use futures_util::{SinkExt, StreamExt};
-use tracing::debug;
+use tracing::{debug, error};
 
 use crate::{
-    app::AppState,
+    appstate::AppState,
     jwt::{Authenticated, Claims},
     room::WSFromUserMessage,
 };
@@ -32,54 +32,94 @@ async fn handle_ws(ws: WebSocket, state: Arc<AppState>, claims: Claims) {
 
     //Maybe change this so it can loop, rn its good tho
     debug!("Waiting for room id");
-    let WSFromUserMessage::ConnectToRoom { room_id } =
-        //TODO! ...
-        parse_msg(ws_rx.next().await.unwrap().unwrap()).unwrap()
-    else {
-        debug!("Room id parsing error");
-        return; //TODO! Do this properly (Give feedback)
+    let WSFromUserMessage::ConnectToRoom { room_id } = ({
+        let Ok(msg) = ws_rx
+            .next()
+            .await
+            .unwrap() //FIXME! Since idk when the ws send none im just ignoring it, shuld check at some point but hasnt crashed it yet
+            .map_err(|e| error!("Error listening to user web socket {}", e))
+        else {
+            ws_tx.close(); //FIXME! Give feedback
+            return;
+        };
+        let Ok(msg) = parse_msg(msg).map_err(|e| error!("Room id parsing error {}", e)) else {
+            ws_tx.close(); //FIXME! Give feedback
+            return;
+        };
+        msg
+    }) else {
+        error!("User sent a non connect to room msg");
+        ws_tx.close(); //FIXME! Give feedback
+        return;
     };
 
     debug!("Room id valid: {}", room_id);
 
-    let room = state.get_room(&room_id).await.unwrap();
-    //  else {
-    //     debug!("Room returning error");
-    //     return; //Handle error
-    // };
+    let Ok(room) = state.get_room(&room_id).await.map_err(|e| {
+        debug!(
+            "Could not retrieve room {} from database due to {}",
+            room_id, e
+        );
+    }) else {
+        ws_tx.close(); //FIXME! Give feedback
+        return;
+    };
 
-    debug!("Room returned: {:?}", room);
+    debug!("Room fetched: {:?}", room);
 
     let mut room_lock = room.lock().await;
 
-    let (room_tx, mut room_rx) = room_lock.new_user(&claims.user_id).await.unwrap(); //TODO! Error if not allowed, need to do something
+    let Ok((room_tx, mut room_rx)) = room_lock
+        .new_user(&claims.user_id)
+        .await
+        .map_err(|e| debug!("User tried to access room while not allowed to: {}", e))
+    else {
+        ws_tx.close(); //FIXME! Give feedback
+        return;
+    };
 
     tokio::spawn(async move {
         while let Some(msg) = room_rx.recv().await {
-            match msg {
-                crate::room::WSInnerUserMessage::Message(msg) => ws_tx.send(msg).await.unwrap(), //TODO! If ws closed we remove thread, but properly
+            if let Err(e) = match msg {
+                crate::room::WSInnerUserMessage::Message(msg) => ws_tx.send(msg).await,
                 crate::room::WSInnerUserMessage::Close => {
-                    ws_tx.close().await.unwrap(); //TODO! We dont care about this error really xd
+                    ws_tx.close(); //FIXME! Give feedback
                     break;
                 }
+            } {
+                debug!("Error sending ws msg: {}", e);
+                //We asume its closed
+                return;
             }
         }
     });
 
     tokio::spawn(async move {
         while let Some(Ok(msg)) = ws_rx.next().await {
-            //TODO! Probs should do this better :D
-            let Ok(msg) = parse_msg(msg) else {
-                continue; //TODO! Proper error response handling
+            let Ok(msg) = parse_msg(msg).map_err(|e| debug!("Error parsing user msg: {}", e))
+            else {
+                continue; //FIXME! Give feedback
             };
 
-            room_tx.send(msg).await.unwrap(); //TODO! :D
+            if let Err(e) = room_tx.send(msg).await {
+                if room_tx.is_closed() {
+                    return;
+                }
+                error!("Error comunicating from ws to room: {}", e);
+                break;
+            }
+        }
+
+        if room_tx.is_closed() {
+            return;
         }
 
         let msg = WSFromUserMessage::Disconected {
             user_id: Arc::new(claims.user_id),
         };
-        room_tx.send(msg).await.unwrap(); //TODO! Pray this doesnt break
+        if let Err(e) = room_tx.send(msg).await {
+            error!("Error comunicating disconection from ws to room: {}", e);
+        }
     });
 }
 
