@@ -69,10 +69,20 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "frontend:build:production"
+              "buildTarget": "frontend:build:production",
+              "allowedHosts": [
+                "localhost",
+                "127.0.0.1",
+                "mi-dominio.com"
+              ]
             },
             "development": {
-              "buildTarget": "frontend:build:development"
+              "buildTarget": "frontend:build:development",
+              "allowedHosts": [
+                "localhost",
+                "127.0.0.1",
+                "mi-dominio.com"
+              ]
             }
           },
           "defaultConfiguration": "development"

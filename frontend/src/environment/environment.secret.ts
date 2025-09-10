@@ -18,4 +18,4 @@
  */
 
 /* Fill this with actual values */
-export const SERVER_ROUTE = "https://lamoara.duckdns.org/devcord/";
+export const SERVER_ROUTE = "https://lamoara.duckdns.org/devcord";
