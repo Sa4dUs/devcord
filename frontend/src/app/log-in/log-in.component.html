@@ -1,11 +1,22 @@
-<h2>LogIn</h2>
+<h2>Log in</h2>
 
-<form [formGroup]="logInForm" (ngSubmit)="onSubmitLogIn()">
-  <label for="username">Username:</label>
-  <input id="username" formControlName="username" />
+<form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+    <label for="username"
+        >Username:
 
-  <label for="password">password:</label>
-  <input id="password" type="password" formControlName="password" />
+        <input id="username" formControlName="username" />
+    </label>
 
-  <button type="submit">Logging</button>
+    <label for="password"
+        >Password:
+
+        <input id="password" type="password" formControlName="password" />
+    </label>
+
+    <button type="submit" [disabled]="!loginForm.valid">Submit</button>
+    @if (error()) {
+        <p>
+            {{ error() }}
+        </p>
+    }
 </form>

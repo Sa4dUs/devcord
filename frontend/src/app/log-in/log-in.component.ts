@@ -1,78 +1,51 @@
-import { Component, inject } from "@angular/core";
-import { ReactiveFormsModule, FormBuilder, Validators } from "@angular/forms";
-import { HttpClient } from "@angular/common/http";
+import { Component, inject, signal } from "@angular/core";
+import {
+    ReactiveFormsModule,
+    Validators,
+    FormGroup,
+    FormControl,
+} from "@angular/forms";
 import { Router } from "@angular/router";
-import { toSignal } from "@angular/core/rxjs-interop";
-import { ErrorsHandling } from "../errors/errors";
-import { SERVER_ROUTE } from "../../environment/environment.secret";
+import { LoginService } from "../services/login.service";
 
-const context = "login";
 @Component({
     selector: "log-in",
-    standalone: true,
     imports: [ReactiveFormsModule],
     templateUrl: "./log-in.component.html",
     styleUrls: ["./log-in.component.scss"],
 })
 export class LogInComponent {
-    private fb = inject(FormBuilder);
-    private http = inject(HttpClient);
-    private router = inject(Router);
-
-    constructor(private errorsMap: ErrorsHandling) {}
-
-    readonly logInForm = this.fb.group({
-        username: ["", Validators.required],
-        password: ["", Validators.required],
+    router = inject(Router);
+    loginService = inject(LoginService);
+    loginForm = new FormGroup({
+        username: new FormControl("", Validators.required),
+        password: new FormControl("", Validators.required),
     });
+    error = signal<string | null>(null);
 
-    readonly formValid = toSignal(this.logInForm.statusChanges, {
-        initialValue: this.logInForm.valid ? "VALID" : "INVALID",
-    });
+    onSubmit() {
+        let { username, password } = this.loginForm.value;
+        this.loginService
+            .login(username ?? "", password ?? "")
+            .then(({ token, username, user_id }) => {
+                this.setError("");
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify({
+                        username,
+                        user_id,
+                    }),
+                );
+                localStorage.setItem("token", token);
 
-    onSubmitLogIn(): void {
-        if (!this.logInForm.valid) {
-            console.warn("Fill the form correctly");
-            return;
-        }
-
-        const { username, password } = this.logInForm.value;
-
-        this.http
-            .post<{
-                token: string;
-                username: string;
-                email: string;
-                telephone?: string;
-                user_id: string;
-            }>(SERVER_ROUTE + "/api/auth/login", {
-                username,
-                password,
+                this.router.navigate(["main-menu"]);
             })
-            .subscribe({
-                next: (data) => {
-                    console.log(data);
-                    if (data.username) {
-                        localStorage.setItem(
-                            "user",
-                            JSON.stringify({
-                                username: data.username,
-                                email: data.email,
-                                telephone: data.telephone || null,
-                                user_id: data.user_id,
-                            }),
-                        );
-                    }
-                    if (data.token) {
-                        localStorage.setItem("token", data.token);
-                    }
-                    this.router.navigate(["/main-menu"]);
-                },
-                error: (error) => {
-                    console.error(
-                        this.errorsMap.getErrorMessage(context, error),
-                    );
-                },
+            .catch(({ status }) => {
+                this.setError(`${status}`);
             });
+    }
+
+    setError(error: string | null) {
+        this.error.set(error);
     }
 }
