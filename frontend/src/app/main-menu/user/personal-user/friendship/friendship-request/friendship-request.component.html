@@ -1,9 +1,0 @@
-<div>
-  <h3>Send friendship request</h3>
-  <input
-    placeholder="Usuario a solicitar"
-    [ngModel]="toUserUsername()"
-    (ngModelChange)="toUserUsername.set($event)"
-  />
-  <button (click)="sendRequest()">Send</button>
-</div>
