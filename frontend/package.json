@@ -3,9 +3,11 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "setup:env":"node environment-setup.js",
     "update:hosts": "node allowed-host-update.js",
-    "start": "npm run update:hosts && ng serve --host 0.0.0.0 --configuration production",
-    "dev": "npm run update:hosts && ng serve --host 0.0.0.0 --poll 2000",
+    "start:env": "npm run setup:env && npm run update:hosts",
+    "start": "npm run start:env && ng serve --host 0.0.0.0 --configuration production",
+    "dev": "npm run start:env && ng serve --host 0.0.0.0 --poll 2000",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
